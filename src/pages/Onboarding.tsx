@@ -13,7 +13,24 @@ const Onboarding = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 pointer-events-none">
+        {/* Gradient Orbs */}
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] animate-pulse-glow" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-[100px] animate-pulse-glow" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-primary-glow/10 rounded-full blur-[80px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
+        
+        {/* Floating Geometric Shapes */}
+        <div className="absolute top-20 left-10 w-32 h-32 border-2 border-primary/20 rounded-lg rotate-12 animate-[spin_20s_linear_infinite]" />
+        <div className="absolute top-40 right-20 w-24 h-24 border-2 border-secondary/20 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
+        <div className="absolute bottom-32 right-40 w-40 h-40 border-2 border-primary-glow/20 rounded-xl rotate-45 animate-[spin_25s_linear_infinite]" />
+        <div className="absolute bottom-20 left-1/4 w-28 h-28 border-2 border-accent/20 rounded-full animate-[spin_18s_linear_infinite_reverse]" />
+        
+        {/* Grid Pattern Overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border)/0.05)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.05)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000,transparent)]" />
+      </div>
+
       {/* Header/Navbar */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -42,7 +59,7 @@ const Onboarding = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20 md:py-32">
+      <section className="container mx-auto px-4 py-20 md:py-32 relative z-10">
         <div className="max-w-4xl mx-auto text-center space-y-8 animate-fade-in-up">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
             <Sparkles className="w-4 h-4" />
@@ -90,7 +107,7 @@ const Onboarding = () => {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-muted/30">
+      <section id="features" className="py-20 bg-muted/30 relative z-10">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16 animate-fade-in-up">
             <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -136,7 +153,7 @@ const Onboarding = () => {
       </section>
 
       {/* How it Works Section */}
-      <section id="how-it-works" className="py-20">
+      <section id="how-it-works" className="py-20 relative z-10">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16 animate-fade-in-up">
             <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -206,7 +223,7 @@ const Onboarding = () => {
       </section>
 
       {/* Benefits Section */}
-      <section id="benefits" className="py-20 bg-muted/30">
+      <section id="benefits" className="py-20 bg-muted/30 relative z-10">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16 animate-fade-in-up">
             <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -239,7 +256,7 @@ const Onboarding = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20">
+      <section className="py-20 relative z-10">
         <div className="container mx-auto px-4">
           <Card className="max-w-4xl mx-auto p-12 bg-gradient-primary text-center space-y-6 shadow-glow animate-fade-in-up">
             <h2 className="text-4xl md:text-5xl font-bold text-white">
@@ -268,7 +285,7 @@ const Onboarding = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-12">
+      <footer className="border-t border-border py-12 relative z-10">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4">
