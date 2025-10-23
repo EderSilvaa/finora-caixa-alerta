@@ -34,7 +34,7 @@ const Onboarding = () => {
       {/* Header/Navbar */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <img src={logo} alt="Finora Finanças" className="h-10 w-auto" />
+          <img src={logo} alt="Finora Finanças" className="h-10 w-auto cursor-pointer" onClick={() => navigate("/")} />
           
           <nav className="hidden md:flex items-center gap-6">
             <button onClick={() => scrollToSection('features')} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">

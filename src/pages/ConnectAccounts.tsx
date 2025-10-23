@@ -50,7 +50,7 @@ const ConnectAccounts = () => {
       {/* Header */}
       <header className="relative z-10 container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
             <img src="/src/assets/logo_finora.jpg" alt="Finora" className="h-8 w-8 rounded-full" />
             <span className="text-xl font-bold text-primary-foreground">Finora</span>
           </div>

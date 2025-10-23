@@ -1,9 +1,12 @@
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Brain, TrendingDown, Calendar } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  
   // Dados simulados de projeção de caixa (últimos 90 dias)
   const cashFlowData = [
     { day: 0, balance: 3500 },
@@ -36,7 +39,7 @@ const Dashboard = () => {
       <header className="relative z-10 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/")}>
               <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center shadow-glow">
                 <Brain className="w-6 h-6 text-white" />
               </div>
