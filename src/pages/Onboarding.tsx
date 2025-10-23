@@ -48,13 +48,22 @@ const Onboarding = () => {
             </button>
           </nav>
 
-          <Button 
-            variant="gradient" 
-            onClick={() => navigate("/simulator")}
-            className="shadow-glow"
-          >
-            Começar grátis
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate("/dashboard")}
+            >
+              Dashboard
+            </Button>
+            <Button 
+              variant="gradient" 
+              onClick={() => navigate("/simulator")}
+              className="shadow-glow"
+            >
+              Começar grátis
+            </Button>
+          </div>
         </div>
       </header>
 

@@ -8,6 +8,7 @@ import Simulator from "./pages/Simulator";
 import Results from "./pages/Results";
 import Signup from "./pages/Signup";
 import Success from "./pages/Success";
+import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/results" element={<Results />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/success" element={<Success />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
