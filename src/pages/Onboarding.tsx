@@ -58,7 +58,7 @@ const Onboarding = () => {
             </Button>
             <Button 
               variant="gradient" 
-              onClick={() => navigate("/simulator")}
+              onClick={() => navigate("/connect")}
               className="shadow-glow"
             >
               Começar grátis
@@ -92,7 +92,7 @@ const Onboarding = () => {
             <Button 
               variant="gradient" 
               size="lg" 
-              onClick={() => navigate("/simulator")}
+              onClick={() => navigate("/connect")}
               className="shadow-glow text-lg"
             >
               Simular gratuitamente
@@ -280,7 +280,7 @@ const Onboarding = () => {
                 variant="outline" 
                 size="lg" 
                 className="bg-white text-primary hover:bg-white/90 border-white text-lg"
-                onClick={() => navigate("/simulator")}
+                onClick={() => navigate("/connect")}
               >
                 Simular meu caixa agora
                 <ArrowRight className="w-5 h-5" />
