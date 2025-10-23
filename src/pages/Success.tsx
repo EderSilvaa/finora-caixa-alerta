@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle, Smartphone, TrendingUp } from "lucide-react";
-import logo from "@/assets/logo_finora.jpg";
+import Logo from "@/components/Logo";
 import { useEffect, useState } from "react";
 
 const Success = () => {
@@ -35,7 +35,7 @@ const Success = () => {
 
       {/* Logo */}
       <div className="mb-8 animate-fade-in">
-        <img src={logo} alt="Finora" className="h-16 w-auto" />
+        <Logo size="lg" />
       </div>
 
       {/* Main Content */}
@@ -48,7 +48,7 @@ const Success = () => {
 
         <div className="space-y-2">
           <h1 className="text-3xl font-bold text-foreground">
-            Tudo pronto! 🎉
+            Tudo pronto!
           </h1>
           <p className="text-lg text-muted-foreground">
             A partir de agora, a Finora te avisa antes do aperto
@@ -104,7 +104,7 @@ const Success = () => {
 
         <div className="pt-4 border-t border-border">
           <p className="text-sm text-muted-foreground">
-            Em breve você receberá sua primeira análise personalizada 📊
+            Em breve você receberá sua primeira análise personalizada
           </p>
         </div>
       </Card>

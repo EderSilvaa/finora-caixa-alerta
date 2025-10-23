@@ -2,7 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, TrendingDown, TrendingUp, AlertTriangle, Lightbulb } from "lucide-react";
-import logo from "@/assets/logo_finora.jpg";
+import Logo from "@/components/Logo";
 import { useEffect, useState } from "react";
 
 interface PredictionData {
@@ -44,14 +44,14 @@ const Results = () => {
     <div className="min-h-screen bg-background p-4 pb-20">
       {/* Header */}
       <div className="w-full max-w-4xl mx-auto mb-6 animate-fade-in">
-        <button 
-          onClick={() => navigate("/simulator")} 
+        <button
+          onClick={() => navigate("/simulator")}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
           Ajustar valores
         </button>
-        <img src={logo} alt="Finora" className="h-12 w-auto" />
+        <Logo size="md" />
       </div>
 
       {/* Main Content */}
@@ -74,7 +74,7 @@ const Results = () => {
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-lg text-destructive mb-2">
-                  ⚠️ Alerta: Seu caixa pode zerar em {daysUntilZero} dias
+                  Alerta: Seu caixa pode zerar em {daysUntilZero} dias
                 </h3>
                 <p className="text-muted-foreground">
                   Com o fluxo atual negativo de <span className="font-semibold text-foreground">R$ {Math.abs(weeklyCashFlow).toLocaleString('pt-BR')}</span> por semana, você precisará tomar ação.
@@ -92,7 +92,7 @@ const Results = () => {
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-lg text-success mb-2">
-                  ✅ Fluxo positivo!
+                  Fluxo positivo!
                 </h3>
                 <p className="text-muted-foreground">
                   Seu caixa está crescendo <span className="font-semibold text-foreground">R$ {weeklyCashFlow.toLocaleString('pt-BR')}</span> por semana.
@@ -155,7 +155,7 @@ const Results = () => {
               <Lightbulb className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1 space-y-2">
-              <h3 className="font-bold text-lg text-foreground">💡 Sugestão Inteligente</h3>
+              <h3 className="font-bold text-lg text-foreground">Sugestão Inteligente</h3>
               {!isPositive ? (
                 <div className="space-y-2 text-muted-foreground">
                   <p>Para evitar ficar no vermelho, você pode:</p>

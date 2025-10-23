@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import logo from "@/assets/logo_finora.jpg";
+import Logo from "@/components/Logo";
 
 const Simulator = () => {
   const navigate = useNavigate();
@@ -22,14 +22,14 @@ const Simulator = () => {
     <div className="min-h-screen bg-background flex flex-col p-4">
       {/* Header */}
       <div className="w-full max-w-2xl mx-auto mb-6 animate-fade-in">
-        <button 
-          onClick={() => navigate("/")} 
+        <button
+          onClick={() => navigate("/")}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
           Voltar
         </button>
-        <img src={logo} alt="Finora" className="h-12 w-auto" />
+        <Logo size="md" />
       </div>
 
       {/* Main Content */}

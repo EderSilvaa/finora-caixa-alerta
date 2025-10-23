@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TrendingUp, Shield, Sparkles, AlertTriangle, Lightbulb, CheckCircle, ArrowRight, Smartphone, BarChart3 } from "lucide-react";
-import logo from "@/assets/logo_finora.jpg";
+import Logo from "@/components/Logo";
 
 const Onboarding = () => {
   const navigate = useNavigate();
@@ -34,7 +34,7 @@ const Onboarding = () => {
       {/* Header/Navbar */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <img src={logo} alt="Finora Finanças" className="h-10 w-auto cursor-pointer" onClick={() => navigate("/")} />
+          <Logo size="md" />
           
           <nav className="hidden md:flex items-center gap-6">
             <button onClick={() => scrollToSection('features')} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
@@ -110,7 +110,7 @@ const Onboarding = () => {
           </div>
 
           <p className="text-sm text-muted-foreground">
-            ✓ Sem cadastro inicial · ✓ Resultado em 2 minutos · ✓ 100% gratuito
+            Sem cadastro inicial · Resultado em 2 minutos · 100% gratuito
           </p>
         </div>
       </section>
@@ -298,7 +298,7 @@ const Onboarding = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              <img src={logo} alt="Finora" className="h-8 w-auto" />
+              <Logo size="sm" />
               <p className="text-sm text-muted-foreground">
                 © 2025 Finora Finanças. Um copiloto financeiro para seu negócio.
               </p>

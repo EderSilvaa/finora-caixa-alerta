@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Check } from "lucide-react";
-import logo from "@/assets/logo_finora.jpg";
+import Logo from "@/components/Logo";
 import { useToast } from "@/hooks/use-toast";
 
 const Signup = () => {
@@ -51,15 +51,15 @@ const Signup = () => {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       {/* Header */}
       <div className="w-full max-w-md mb-6 animate-fade-in">
-        <button 
-          onClick={() => navigate("/results")} 
+        <button
+          onClick={() => navigate("/results")}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
           Voltar
         </button>
         <div className="flex justify-center">
-          <img src={logo} alt="Finora" className="h-12 w-auto" />
+          <Logo size="md" />
         </div>
       </div>
 

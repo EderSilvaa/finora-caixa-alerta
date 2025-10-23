@@ -6,6 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Lock, ArrowRight, Shield, Building2, Target, Bell } from "lucide-react";
+import Logo from "@/components/Logo";
+import { NubankLogo, ItauLogo, InterLogo, SantanderLogo } from "@/components/BankLogos";
 
 const ConnectAccounts = () => {
   const navigate = useNavigate();
@@ -17,12 +19,34 @@ const ConnectAccounts = () => {
   });
 
   const banks = [
-    { name: "Itaú", logo: "🏦" },
-    { name: "Nubank", logo: "💜" },
-    { name: "Santander", logo: "🔴" },
-    { name: "Caixa", logo: "🔵" },
-    { name: "Bradesco", logo: "🔴" },
-    { name: "Banco do Brasil", logo: "🟡" }
+    {
+      name: "Nubank",
+      logo: NubankLogo,
+      bgColor: "bg-[#8A05BE]/5",
+      borderColor: "border-[#8A05BE]/20",
+      hoverColor: "hover:border-[#8A05BE]"
+    },
+    {
+      name: "Itaú",
+      logo: ItauLogo,
+      bgColor: "bg-[#EC7000]/5",
+      borderColor: "border-[#EC7000]/20",
+      hoverColor: "hover:border-[#EC7000]"
+    },
+    {
+      name: "Inter",
+      logo: InterLogo,
+      bgColor: "bg-[#FF7A00]/5",
+      borderColor: "border-[#FF7A00]/20",
+      hoverColor: "hover:border-[#FF7A00]"
+    },
+    {
+      name: "Santander",
+      logo: SantanderLogo,
+      bgColor: "bg-white",
+      borderColor: "border-[#EC0000]/20",
+      hoverColor: "hover:border-[#EC0000]"
+    }
   ];
 
   const handleConnect = () => {
@@ -50,8 +74,8 @@ const ConnectAccounts = () => {
       {/* Header */}
       <header className="relative z-10 container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-            <img src="/src/assets/logo_finora.jpg" alt="Finora" className="h-8 w-8 rounded-full" />
+          <div className="flex items-center gap-2">
+            <Logo size="sm" />
             <span className="text-xl font-bold text-primary-foreground">Finora</span>
           </div>
           
@@ -69,49 +93,54 @@ const ConnectAccounts = () => {
         {step === 1 && (
           <div className="animate-fade-in space-y-8">
             {/* Main card */}
-            <Card className="p-8 bg-card/80 backdrop-blur-sm border-primary/20">
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <Shield className="w-8 h-8 text-primary" />
+            <Card className="p-10 bg-card/90 backdrop-blur-md border-primary/30 shadow-2xl">
+              <div className="space-y-8">
+                <div className="text-center space-y-3">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-primary mb-2">
+                    <Shield className="w-8 h-8 text-white" />
+                  </div>
                   <h1 className="text-3xl font-bold text-foreground">
-                    Conecte suas contas com segurança através do Open Finance
+                    Conecte sua conta bancária
                   </h1>
+                  <p className="text-muted-foreground text-base max-w-md mx-auto">
+                    Conexão segura via Open Finance do Banco Central.
+                    <span className="block text-foreground font-medium mt-1">Seus dados estão 100% protegidos.</span>
+                  </p>
                 </div>
 
-                <p className="text-muted-foreground text-lg">
-                  A Finora usa a infraestrutura oficial do Banco Central para ler seus dados financeiros — 
-                  <span className="text-foreground font-medium"> sem guardar senhas, sem risco de acesso indevido.</span>
-                </p>
-
                 {/* Banks grid */}
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-4 py-6">
-                  {banks.map((bank, index) => (
-                    <div 
-                      key={bank.name}
-                      className="flex flex-col items-center gap-2 p-3 rounded-lg bg-secondary/20 hover:bg-secondary/40 transition-all hover:scale-105 cursor-pointer"
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                    >
-                      <span className="text-3xl">{bank.logo}</span>
-                      <span className="text-xs text-muted-foreground text-center">{bank.name}</span>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4">
+                  {banks.map((bank, index) => {
+                    const BankLogoComponent = bank.logo;
+                    return (
+                      <div
+                        key={bank.name}
+                        className={`flex flex-col items-center justify-center gap-3 p-5 rounded-xl ${bank.bgColor} border-2 ${bank.borderColor} ${bank.hoverColor} hover:shadow-xl transition-all hover:scale-[1.03] cursor-pointer group animate-fade-in`}
+                        style={{ animationDelay: `${index * 0.1}s` }}
+                      >
+                        <div className="w-20 h-20 rounded-lg overflow-hidden shadow-md">
+                          <BankLogoComponent className="w-full h-full object-cover" />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Authorization button */}
-                <Button 
-                  onClick={handleConnect}
-                  size="lg"
-                  className="w-full text-lg h-14 bg-gradient-primary hover:scale-105 transition-transform"
-                >
-                  <Lock className="mr-2 w-5 h-5" />
-                  Autorizar conexão segura
-                </Button>
+                <div className="space-y-4 pt-4">
+                  <Button
+                    onClick={handleConnect}
+                    size="lg"
+                    className="w-full text-base h-14 bg-gradient-primary hover:scale-[1.02] transition-transform shadow-lg"
+                  >
+                    <Lock className="mr-2 w-5 h-5" />
+                    Conectar com Open Finance
+                  </Button>
 
-                <p className="text-center text-sm text-muted-foreground">
-                  <a href="#" className="text-primary hover:underline">
-                    Saiba mais sobre como protegemos seus dados
-                  </a>
-                </p>
+                  <p className="text-center text-xs text-muted-foreground">
+                    Regulamentado pelo Banco Central · Criptografia de nível bancário
+                  </p>
+                </div>
               </div>
             </Card>
 
@@ -119,13 +148,19 @@ const ConnectAccounts = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
                 { icon: Shield, title: "Criptografia bancária", desc: "Mesmo padrão dos bancos" },
-                { icon: Lock, title: "Sem guardar senhas", desc: "Acesso via Open Finance" },
+                { icon: Lock, title: "Sem armazenar senhas", desc: "Acesso via Open Finance" },
                 { icon: Building2, title: "Regulado pelo BC", desc: "Infraestrutura oficial" }
               ].map((feature, index) => (
-                <Card key={index} className="p-4 bg-card/60 backdrop-blur-sm border-primary/10 hover:border-primary/30 transition-all">
-                  <feature.icon className="w-6 h-6 text-primary mb-2" />
-                  <h3 className="font-semibold text-sm mb-1">{feature.title}</h3>
-                  <p className="text-xs text-muted-foreground">{feature.desc}</p>
+                <Card key={index} className="p-5 bg-card/70 backdrop-blur-sm border-border/50 hover:border-primary/40 hover:shadow-md transition-all">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <feature.icon className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm mb-1 text-foreground">{feature.title}</h3>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{feature.desc}</p>
+                    </div>
+                  </div>
                 </Card>
               ))}
             </div>
@@ -134,84 +169,90 @@ const ConnectAccounts = () => {
 
         {step === 2 && (
           <div className="animate-fade-in">
-            <Card className="p-8 bg-card/80 backdrop-blur-sm border-primary/20 max-w-2xl mx-auto">
-              <div className="space-y-6">
-                <div className="text-center space-y-2 mb-8">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success/20 mb-4">
-                    <Shield className="w-8 h-8 text-success" />
+            <Card className="p-10 bg-card/90 backdrop-blur-md border-primary/30 shadow-2xl max-w-2xl mx-auto">
+              <div className="space-y-8">
+                <div className="text-center space-y-3">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-success to-success/70 mb-2 shadow-lg">
+                    <Shield className="w-8 h-8 text-white" />
                   </div>
-                  <h2 className="text-2xl font-bold text-foreground">
-                    Conexão autorizada com sucesso!
+                  <h2 className="text-3xl font-bold text-foreground">
+                    Conexão estabelecida
                   </h2>
-                  <p className="text-muted-foreground">
-                    Agora vamos personalizar sua experiência
+                  <p className="text-muted-foreground text-base">
+                    Personalize sua experiência respondendo 3 perguntas
                   </p>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-6 pt-4">
                   {/* Question 1 */}
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2 text-base">
-                      <Building2 className="w-4 h-4 text-primary" />
-                      Você é MEI, autônomo ou empresa?
+                  <div className="space-y-3">
+                    <Label className="flex items-center gap-2 text-base font-semibold text-foreground">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Building2 className="w-4 h-4 text-primary" />
+                      </div>
+                      Tipo de negócio
                     </Label>
                     <Select onValueChange={(value) => setProfile({...profile, businessType: value})}>
-                      <SelectTrigger className="h-12 bg-secondary/20">
+                      <SelectTrigger className="h-13 bg-background border-2 border-border hover:border-primary/50 transition-colors text-base">
                         <SelectValue placeholder="Selecione uma opção" />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-primary/20">
-                        <SelectItem value="mei">MEI</SelectItem>
-                        <SelectItem value="autonomo">Autônomo</SelectItem>
-                        <SelectItem value="empresa">Empresa</SelectItem>
+                        <SelectItem value="mei" className="text-base">MEI</SelectItem>
+                        <SelectItem value="autonomo" className="text-base">Autônomo</SelectItem>
+                        <SelectItem value="empresa" className="text-base">Empresa</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   {/* Question 2 */}
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2 text-base">
-                      <Target className="w-4 h-4 text-primary" />
-                      Qual sua principal meta financeira?
+                  <div className="space-y-3">
+                    <Label className="flex items-center gap-2 text-base font-semibold text-foreground">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Target className="w-4 h-4 text-primary" />
+                      </div>
+                      Principal meta financeira
                     </Label>
                     <Select onValueChange={(value) => setProfile({...profile, goal: value})}>
-                      <SelectTrigger className="h-12 bg-secondary/20">
+                      <SelectTrigger className="h-13 bg-background border-2 border-border hover:border-primary/50 transition-colors text-base">
                         <SelectValue placeholder="Selecione sua meta" />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-primary/20">
-                        <SelectItem value="dividas">Reduzir dívidas</SelectItem>
-                        <SelectItem value="fluxo">Manter fluxo de caixa</SelectItem>
-                        <SelectItem value="investir">Investir no negócio</SelectItem>
-                        <SelectItem value="crescer">Crescer a empresa</SelectItem>
+                        <SelectItem value="dividas" className="text-base">Reduzir dívidas</SelectItem>
+                        <SelectItem value="fluxo" className="text-base">Manter fluxo de caixa saudável</SelectItem>
+                        <SelectItem value="investir" className="text-base">Investir no negócio</SelectItem>
+                        <SelectItem value="crescer" className="text-base">Crescer a empresa</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   {/* Question 3 */}
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2 text-base">
-                      <Bell className="w-4 h-4 text-primary" />
-                      Como você prefere receber alertas?
+                  <div className="space-y-3">
+                    <Label className="flex items-center gap-2 text-base font-semibold text-foreground">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Bell className="w-4 h-4 text-primary" />
+                      </div>
+                      Preferência de alertas
                     </Label>
                     <Select onValueChange={(value) => setProfile({...profile, alertPreference: value})}>
-                      <SelectTrigger className="h-12 bg-secondary/20">
-                        <SelectValue placeholder="Escolha o canal" />
+                      <SelectTrigger className="h-13 bg-background border-2 border-border hover:border-primary/50 transition-colors text-base">
+                        <SelectValue placeholder="Escolha o canal de notificação" />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-primary/20">
-                        <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                        <SelectItem value="email">E-mail</SelectItem>
-                        <SelectItem value="app">Notificações no app</SelectItem>
+                        <SelectItem value="whatsapp" className="text-base">WhatsApp</SelectItem>
+                        <SelectItem value="email" className="text-base">E-mail</SelectItem>
+                        <SelectItem value="app" className="text-base">Notificações no app</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
-                <Button 
+                <Button
                   onClick={handleContinue}
                   size="lg"
                   disabled={!profile.businessType || !profile.goal || !profile.alertPreference}
-                  className="w-full text-lg h-14 bg-gradient-primary hover:scale-105 transition-transform mt-8"
+                  className="w-full text-base h-14 bg-gradient-primary hover:scale-[1.02] transition-transform mt-8 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Continuar para o seu dashboard preditivo
+                  Acessar Dashboard
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </div>
@@ -223,7 +264,7 @@ const ConnectAccounts = () => {
       {/* Footer */}
       <footer className="relative z-10 container mx-auto px-4 py-8 text-center">
         <p className="text-muted-foreground text-sm">
-          ✨ Transparência e controle em cada dado. Essa é a Finora.
+          Transparência e controle em cada dado. Essa é a Finora.
         </p>
       </footer>
     </div>
