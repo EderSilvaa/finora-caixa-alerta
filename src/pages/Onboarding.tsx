@@ -120,7 +120,6 @@ const Onboarding = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-20 animate-fade-in-up">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-6">
-              <Zap className="w-4 h-4" />
               RECURSOS PRINCIPAIS
             </div>
             <h2 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
@@ -136,9 +135,6 @@ const Onboarding = () => {
             <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl shadow-2xl hover:shadow-primary/20 transition-all duration-500 hover:-translate-y-2 group animate-fade-in" style={{ animationDelay: "0.1s" }}>
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <CardHeader className="pb-4 relative">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500">
-                  <TrendingUp className="w-8 h-8 text-primary" />
-                </div>
                 <CardTitle className="text-2xl font-bold text-foreground mb-2">Previsão Automática</CardTitle>
                 <CardDescription className="text-base">Powered by Machine Learning</CardDescription>
               </CardHeader>
@@ -146,9 +142,8 @@ const Onboarding = () => {
                 <p className="text-muted-foreground leading-relaxed mb-6">
                   Veja exatamente quando seu dinheiro vai acabar. Nossa IA analisa seu fluxo histórico e projeta as próximas 4 semanas com precisão.
                 </p>
-                <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                  <Activity className="w-4 h-4" />
-                  <span>Análise preditiva em tempo real</span>
+                <div className="text-sm font-medium text-primary">
+                  Análise preditiva em tempo real
                 </div>
               </CardContent>
             </Card>
@@ -157,9 +152,6 @@ const Onboarding = () => {
             <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl shadow-2xl hover:shadow-warning/20 transition-all duration-500 hover:-translate-y-2 group animate-fade-in" style={{ animationDelay: "0.2s" }}>
               <div className="absolute inset-0 bg-gradient-to-br from-warning/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <CardHeader className="pb-4 relative">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-warning/20 to-warning/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500">
-                  <AlertTriangle className="w-8 h-8 text-warning" />
-                </div>
                 <CardTitle className="text-2xl font-bold text-foreground mb-2">Alertas Inteligentes</CardTitle>
                 <CardDescription className="text-base">Prevenção antes do problema</CardDescription>
               </CardHeader>
@@ -167,9 +159,8 @@ const Onboarding = () => {
                 <p className="text-muted-foreground leading-relaxed mb-6">
                   Receba avisos diretos no WhatsApp antes do seu caixa zerar. Sistema de alertas multicamada que aprende com seu comportamento.
                 </p>
-                <div className="flex items-center gap-2 text-sm font-medium text-warning">
-                  <Smartphone className="w-4 h-4" />
-                  <span>Notificações personalizadas</span>
+                <div className="text-sm font-medium text-warning">
+                  Notificações personalizadas
                 </div>
               </CardContent>
             </Card>
@@ -178,9 +169,6 @@ const Onboarding = () => {
             <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl shadow-2xl hover:shadow-success/20 transition-all duration-500 hover:-translate-y-2 group animate-fade-in" style={{ animationDelay: "0.3s" }}>
               <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <CardHeader className="pb-4 relative">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-success/20 to-success/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500">
-                  <Brain className="w-8 h-8 text-success" />
-                </div>
                 <CardTitle className="text-2xl font-bold text-foreground mb-2">Sugestões Práticas</CardTitle>
                 <CardDescription className="text-base">Recomendações baseadas em IA</CardDescription>
               </CardHeader>
@@ -188,9 +176,8 @@ const Onboarding = () => {
                 <p className="text-muted-foreground leading-relaxed mb-6">
                   Dicas automáticas e personalizadas: antecipe recebíveis, otimize custos ou identifique oportunidades de crescimento.
                 </p>
-                <div className="flex items-center gap-2 text-sm font-medium text-success">
-                  <Target className="w-4 h-4" />
-                  <span>Insights acionáveis</span>
+                <div className="text-sm font-medium text-success">
+                  Insights acionáveis
                 </div>
               </CardContent>
             </Card>
@@ -320,7 +307,6 @@ const Onboarding = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-20 animate-fade-in-up">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-6">
-              <Sparkles className="w-4 h-4" />
               DIFERENCIAIS
             </div>
             <h2 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
@@ -334,25 +320,21 @@ const Onboarding = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {[
               {
-                icon: CheckCircle,
                 title: "Zero Burocracia",
                 desc: "Sem planilhas complexas, cursos de finanças ou processos complicados. Tudo automatizado.",
                 color: "success"
               },
               {
-                icon: Shield,
                 title: "Dados Seguros",
                 desc: "Criptografia de ponta a ponta. Suas informações financeiras são privadas e protegidas.",
                 color: "primary"
               },
               {
-                icon: Brain,
                 title: "IA Inteligente",
                 desc: "Machine Learning que aprende com seu histórico para previsões cada vez mais precisas.",
                 color: "secondary"
               },
               {
-                icon: Zap,
                 title: "Alertas Práticos",
                 desc: "Notificações instantâneas no WhatsApp quando você mais precisa, com ações sugeridas.",
                 color: "warning"
@@ -361,9 +343,6 @@ const Onboarding = () => {
               <Card key={i} className="relative overflow-hidden border-0 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 group animate-fade-in" style={{ animationDelay: `${i * 0.1}s` }}>
                 <div className={`absolute inset-0 bg-gradient-to-br from-${benefit.color}/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
                 <CardHeader className="pb-4 relative">
-                  <div className={`w-14 h-14 rounded-xl bg-${benefit.color}/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500`}>
-                    <benefit.icon className={`w-7 h-7 text-${benefit.color}`} />
-                  </div>
                   <CardTitle className="text-xl font-bold text-foreground">{benefit.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="relative">
