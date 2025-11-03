@@ -1,73 +1,307 @@
-# Welcome to your Lovable project
+# Finora - Caixa Alerta
 
-## Project info
+<div align="center">
 
-**URL**: https://lovable.dev/projects/ccca78e5-f413-420a-b5b6-46215107f928
+  ![Finora Logo](https://img.shields.io/badge/Finora-Caixa%20Alerta-6366f1?style=for-the-badge)
 
-## How can I edit this code?
+  **Plataforma inteligente de gestão e previsão de fluxo de caixa com IA**
 
-There are several ways of editing your application.
+  [Demo](#) • [Documentação](#) • [Reportar Bug](https://github.com/seu-usuario/finora-caixa-alerta/issues) • [Solicitar Feature](https://github.com/seu-usuario/finora-caixa-alerta/issues)
 
-**Use Lovable**
+</div>
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ccca78e5-f413-420a-b5b6-46215107f928) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Sobre o Projeto
 
-**Use your preferred IDE**
+**Finora - Caixa Alerta** é uma plataforma de gestão financeira empresarial que utiliza inteligência artificial para prever o fluxo de caixa, identificar padrões de despesas e receitas, e fornecer insights acionáveis para evitar problemas de liquidez.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Principais Funcionalidades
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Previsão de Fluxo de Caixa**: Projeções precisas de até 102 dias baseadas em histórico e padrões
+- **Alertas Inteligentes**: Notificações automáticas quando o caixa estiver próximo de zerar
+- **Análise com IA**: Insights personalizados sobre padrões de gastos, oportunidades de economia e riscos
+- **Dashboard Interativo**: Visualização em tempo real de KPIs financeiros essenciais
+- **Gestão de Transações**: Registro e categorização de receitas e despesas
+- **Metas Financeiras**: Acompanhamento visual do progresso de objetivos financeiros
+- **Simulador de Cenários**: Teste diferentes cenários de receitas e despesas
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Screenshots
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Dashboard Premium
+> Visualização completa de KPIs, gráficos de projeção e insights de IA
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Análise de IA
+> Insights detalhados e recomendações personalizadas baseadas em machine learning
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Simulador de Fluxo
+> Ferramenta interativa para testar diferentes cenários financeiros
+
+---
+
+## Tecnologias
+
+Este projeto foi construído com tecnologias modernas e robustas:
+
+### Frontend
+- **React 18** - Biblioteca JavaScript para interfaces
+- **TypeScript** - Tipagem estática e segurança de código
+- **Vite** - Build tool ultra-rápido
+- **React Router DOM** - Navegação e rotas
+- **TanStack Query** - Gerenciamento de estado assíncrono
+
+### UI/UX
+- **Tailwind CSS** - Framework CSS utility-first
+- **shadcn/ui** - Componentes acessíveis e customizáveis
+- **Radix UI** - Primitivos de UI headless
+- **Lucide React** - Ícones modernos
+- **Recharts** - Gráficos e visualizações de dados
+
+### Formulários e Validação
+- **React Hook Form** - Gerenciamento de formulários performático
+- **Zod** - Validação de schemas TypeScript-first
+
+### Estilização e Animações
+- **Tailwind Merge & CVA** - Gerenciamento de classes CSS
+- **Tailwind Animate** - Animações fluidas
+- **Next Themes** - Suporte a temas dark/light
+
+---
+
+## Começando
+
+### Pré-requisitos
+
+Certifique-se de ter instalado:
+- **Node.js** (versão 18 ou superior)
+- **npm** ou **yarn**
+
+Recomendamos o uso do [nvm](https://github.com/nvm-sh/nvm) para gerenciar versões do Node.js:
+
+```bash
+# Instalar nvm (macOS/Linux)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+
+# Instalar versão LTS do Node
+nvm install --lts
+nvm use --lts
+```
+
+### Instalação
+
+1. **Clone o repositório**
+```bash
+git clone https://github.com/seu-usuario/finora-caixa-alerta.git
+cd finora-caixa-alerta
+```
+
+2. **Instale as dependências**
+```bash
+npm install
+```
+
+3. **Inicie o servidor de desenvolvimento**
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+4. **Acesse a aplicação**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Abra [http://localhost:5173](http://localhost:5173) no seu navegador
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Scripts Disponíveis
 
-## What technologies are used for this project?
+```bash
+# Desenvolvimento
+npm run dev          # Inicia servidor de desenvolvimento
 
-This project is built with:
+# Build
+npm run build        # Build de produção
+npm run build:dev    # Build de desenvolvimento
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Qualidade de Código
+npm run lint         # Executa ESLint
 
-## How can I deploy this project?
+# Preview
+npm run preview      # Preview do build de produção
+```
 
-Simply open [Lovable](https://lovable.dev/projects/ccca78e5-f413-420a-b5b6-46215107f928) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
+## Estrutura do Projeto
 
-Yes, you can!
+```
+finora-caixa-alerta/
+├── src/
+│   ├── components/        # Componentes React
+│   │   ├── ui/           # Componentes de UI (shadcn)
+│   │   ├── Logo.tsx      # Componente de logo
+│   │   └── BankLogos.tsx # Logos de bancos
+│   ├── pages/            # Páginas da aplicação
+│   │   ├── Index.tsx     # Página inicial
+│   │   ├── Dashboard.tsx # Dashboard principal
+│   │   ├── Simulator.tsx # Simulador de fluxo
+│   │   ├── Results.tsx   # Resultados da simulação
+│   │   ├── Onboarding.tsx    # Onboarding de usuários
+│   │   ├── ConnectAccounts.tsx # Conexão de contas
+│   │   └── ...
+│   ├── hooks/            # React hooks customizados
+│   ├── lib/              # Utilitários e helpers
+│   ├── App.tsx           # Componente raiz
+│   └── main.tsx          # Entry point
+├── public/               # Assets estáticos
+├── package.json          # Dependências e scripts
+├── tsconfig.json         # Configuração TypeScript
+├── tailwind.config.ts    # Configuração Tailwind
+├── vite.config.ts        # Configuração Vite
+└── README.md             # Este arquivo
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Funcionalidades Detalhadas
+
+### Dashboard Financeiro
+- KPIs em tempo real (Saldo Atual, Receita Mensal, Despesas, Economia)
+- Gráfico de projeção de caixa com linha do tempo
+- Comparativo de Receitas vs Despesas (6 meses)
+- Feed de transações recentes
+- Metas financeiras com barras de progresso
+
+### Análise de IA
+- Identificação automática de padrões de gastos
+- Detecção de oportunidades de economia
+- Análise de risco de fluxo de caixa
+- Previsões baseadas em sazonalidade
+- Recomendações acionáveis personalizadas
+
+### Simulador
+- Ajuste interativo de receitas semanais
+- Configuração de despesas fixas e variáveis
+- Cálculo instantâneo de saldo projetado
+- Visualização de cenários "e se?"
+
+### Gestão de Transações
+- Registro rápido de receitas e despesas
+- Categorização automática
+- Histórico completo de movimentações
+- Atualização em tempo real do saldo
+
+---
+
+## Customização
+
+### Temas
+O projeto suporta temas personalizados através do Tailwind CSS. Para customizar cores e estilos:
+
+1. Edite `tailwind.config.ts`
+2. Modifique variáveis CSS em `src/index.css`
+
+### Componentes
+Os componentes UI podem ser customizados individualmente em `src/components/ui/`
+
+---
+
+## Deploy
+
+### Build de Produção
+
+```bash
+npm run build
+```
+
+Os arquivos otimizados estarão na pasta `dist/`
+
+### Deploy Recomendado
+
+O projeto está otimizado para deploy em:
+- **Vercel** (recomendado)
+- **Netlify**
+- **Cloudflare Pages**
+- Qualquer hosting de sites estáticos
+
+#### Deploy na Vercel
+
+```bash
+# Instale a CLI da Vercel
+npm i -g vercel
+
+# Deploy
+vercel
+```
+
+---
+
+## Roadmap
+
+- [ ] Integração com APIs bancárias (Open Banking)
+- [ ] Exportação de relatórios (PDF/Excel)
+- [ ] Notificações push e email
+- [ ] App mobile (React Native)
+- [ ] Análise preditiva avançada com ML
+- [ ] Multi-empresa e multi-usuário
+- [ ] Integração com contabilidade
+- [ ] Dashboard de investimentos
+
+---
+
+## Contribuindo
+
+Contribuições são bem-vindas! Para contribuir:
+
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/NovaFuncionalidade`)
+3. Commit suas mudanças (`git commit -m 'feat: Adiciona nova funcionalidade'`)
+4. Push para a branch (`git push origin feature/NovaFuncionalidade`)
+5. Abra um Pull Request
+
+### Convenção de Commits
+
+Este projeto segue [Conventional Commits](https://www.conventionalcommits.org/):
+
+- `feat:` nova funcionalidade
+- `fix:` correção de bug
+- `docs:` mudanças na documentação
+- `style:` formatação, ponto e vírgula, etc
+- `refactor:` refatoração de código
+- `test:` adição de testes
+- `chore:` atualização de ferramentas, configurações
+
+---
+
+## Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+---
+
+## Contato
+
+**Seu Nome** - [@seu_twitter](https://twitter.com/seu_twitter) - seu.email@example.com
+
+Link do Projeto: [https://github.com/seu-usuario/finora-caixa-alerta](https://github.com/seu-usuario/finora-caixa-alerta)
+
+---
+
+## Agradecimentos
+
+- [React](https://react.dev/)
+- [Vite](https://vitejs.dev/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [Radix UI](https://www.radix-ui.com/)
+- [Recharts](https://recharts.org/)
+
+---
+
+<div align="center">
+
+  **Feito com ❤️ e TypeScript**
+
+  Se este projeto foi útil, considere dar uma ⭐!
+
+</div>
