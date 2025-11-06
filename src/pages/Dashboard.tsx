@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Brain, TrendingDown, Calendar, AlertTriangle, TrendingUp, ArrowUpRight, ArrowDownRight, DollarSign, Target, Zap, Download, Upload, RefreshCw, Sparkles, ArrowRight, Activity, PieChart, LogOut, User, Settings, Building2 } from "lucide-react";
+import { Brain, TrendingDown, Calendar, AlertTriangle, TrendingUp, ArrowUpRight, ArrowDownRight, DollarSign, Target, Zap, Download, Upload, RefreshCw, Sparkles, ArrowRight, Activity, PieChart, LogOut, User, Settings, Building2, Loader2 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import Logo from "@/components/Logo";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useTransactionStats } from "@/hooks/useTransactionStats";
+import { useTransactions } from "@/hooks/useTransactions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +26,10 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, logout } = useAuth();
+
+  // Fetch real data from Supabase
+  const { stats, monthlyData, cashFlowProjection, daysUntilZero } = useTransactionStats();
+  const { transactions, loading: transactionsLoading, addTransaction } = useTransactions();
 
   const handleLogout = async () => {
     try {
@@ -52,54 +58,29 @@ const Dashboard = () => {
   const [incomeAmount, setIncomeAmount] = useState("");
   const [incomeDescription, setIncomeDescription] = useState("");
 
-  // Estados dinâmicos
-  const [currentBalance, setCurrentBalance] = useState(3500);
-  const [totalRevenue, setTotalRevenue] = useState(11000);
-  const [totalExpenses, setTotalExpenses] = useState(9500);
-  const [transactions, setTransactions] = useState([
-    { id: 1, type: 'income', description: 'Pagamento Cliente XYZ', amount: 2500, date: 'Hoje, 14:30', category: 'Vendas' },
-    { id: 2, type: 'expense', description: 'Fornecedor ABC', amount: 850, date: 'Hoje, 10:15', category: 'Fornecedores' },
-    { id: 3, type: 'income', description: 'Venda Produto', amount: 1200, date: 'Ontem, 16:45', category: 'Vendas' },
-    { id: 4, type: 'expense', description: 'Aluguel', amount: 3000, date: 'Ontem, 09:00', category: 'Fixo' },
-    { id: 5, type: 'expense', description: 'Energia Elétrica', amount: 450, date: '2 dias atrás', category: 'Fixo' },
-  ]);
+  // Use real data from hooks
+  const currentBalance = stats.currentBalance;
+  const totalRevenue = stats.totalRevenue;
+  const totalExpenses = stats.totalExpenses;
+  const monthlyGrowth = stats.monthlyGrowth;
+  const monthlySavings = stats.monthlySavings;
+  const cashFlowData = cashFlowProjection;
+  const revenueExpensesData = monthlyData;
 
-  // Dados simulados de projeção de caixa
-  const [cashFlowData] = useState([
-    { day: 0, balance: 3500 },
-    { day: 15, balance: 3200 },
-    { day: 30, balance: 2800 },
-    { day: 45, balance: 2300 },
-    { day: 60, balance: 1700 },
-    { day: 75, balance: 900 },
-    { day: 90, balance: 200 },
-    { day: 102, balance: 0 },
-  ]);
+  // Recent 5 transactions for display
+  const recentTransactions = transactions.slice(0, 5);
 
-  // Dados de receitas vs despesas (últimos 6 meses)
-  const revenueExpensesData = [
-    { month: 'Mai', receita: 8500, despesas: 7200 },
-    { month: 'Jun', receita: 9200, despesas: 7800 },
-    { month: 'Jul', receita: 8800, despesas: 8200 },
-    { month: 'Ago', receita: 9500, despesas: 8500 },
-    { month: 'Set', receita: 10200, despesas: 9100 },
-    { month: 'Out', receita: totalRevenue, despesas: totalExpenses },
-  ];
-
-  // Metas financeiras
+  // Metas financeiras (keep as mockdata for now, will be replaced in next phase)
   const financialGoals = [
     { id: 1, title: 'Reserva de Emergência', current: 8500, target: 15000, percentage: 57, color: 'primary' },
     { id: 2, title: 'Expansão do Negócio', current: 12000, target: 30000, percentage: 40, color: 'secondary' },
     { id: 3, title: 'Quitação de Dívidas', current: 7500, target: 10000, percentage: 75, color: 'success' },
   ];
 
-  const daysUntilZero = 12;
   const analyzedPeriod = 90;
-  const monthlyGrowth = 8.5;
-  const monthlySavings = totalRevenue - totalExpenses;
 
   // Função para registrar despesa
-  const handleAddExpense = () => {
+  const handleAddExpense = async () => {
     if (!expenseAmount || !expenseDescription) {
       toast({
         title: "Campos obrigatórios",
@@ -110,30 +91,37 @@ const Dashboard = () => {
     }
 
     const amount = parseFloat(expenseAmount);
-    const newTransaction = {
-      id: transactions.length + 1,
-      type: 'expense' as const,
-      description: expenseDescription,
-      amount: amount,
-      date: 'Agora',
-      category: 'Outros'
-    };
 
-    setTransactions([newTransaction, ...transactions.slice(0, 4)]);
-    setCurrentBalance(currentBalance - amount);
-    setTotalExpenses(totalExpenses + amount);
-    setExpenseAmount("");
-    setExpenseDescription("");
-    setShowExpenseModal(false);
+    try {
+      await addTransaction({
+        type: 'expense',
+        description: expenseDescription,
+        amount: amount,
+        category: 'outros',
+        payment_method: 'money',
+        date: new Date().toISOString(),
+        is_recurring: false,
+      });
 
-    toast({
-      title: "Despesa registrada!",
-      description: `R$ ${amount.toLocaleString('pt-BR')} adicionado às despesas`,
-    });
+      setExpenseAmount("");
+      setExpenseDescription("");
+      setShowExpenseModal(false);
+
+      toast({
+        title: "Despesa registrada!",
+        description: `R$ ${amount.toLocaleString('pt-BR')} adicionado às despesas`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao registrar despesa",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   // Função para registrar receita
-  const handleAddIncome = () => {
+  const handleAddIncome = async () => {
     if (!incomeAmount || !incomeDescription) {
       toast({
         title: "Campos obrigatórios",
@@ -144,26 +132,33 @@ const Dashboard = () => {
     }
 
     const amount = parseFloat(incomeAmount);
-    const newTransaction = {
-      id: transactions.length + 1,
-      type: 'income' as const,
-      description: incomeDescription,
-      amount: amount,
-      date: 'Agora',
-      category: 'Receita'
-    };
 
-    setTransactions([newTransaction, ...transactions.slice(0, 4)]);
-    setCurrentBalance(currentBalance + amount);
-    setTotalRevenue(totalRevenue + amount);
-    setIncomeAmount("");
-    setIncomeDescription("");
-    setShowIncomeModal(false);
+    try {
+      await addTransaction({
+        type: 'income',
+        description: incomeDescription,
+        amount: amount,
+        category: 'receita',
+        payment_method: 'money',
+        date: new Date().toISOString(),
+        is_recurring: false,
+      });
 
-    toast({
-      title: "Receita registrada!",
-      description: `R$ ${amount.toLocaleString('pt-BR')} adicionado às receitas`,
-    });
+      setIncomeAmount("");
+      setIncomeDescription("");
+      setShowIncomeModal(false);
+
+      toast({
+        title: "Receita registrada!",
+        description: `R$ ${amount.toLocaleString('pt-BR')} adicionado às receitas`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao registrar receita",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   // Função para simular análise de IA
@@ -685,34 +680,59 @@ const Dashboard = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
-                {transactions.map((transaction) => (
-                  <div
-                    key={transaction.id}
-                    className="flex items-center gap-3 p-3 rounded-xl hover:bg-background/60 transition-all border border-transparent hover:border-primary/20 cursor-pointer group"
-                  >
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      transaction.type === 'income'
-                        ? 'bg-success/20 group-hover:bg-success/30'
-                        : 'bg-destructive/20 group-hover:bg-destructive/30'
-                    } transition-colors`}>
-                      {transaction.type === 'income' ? (
-                        <ArrowUpRight className="w-5 h-5 text-success" />
-                      ) : (
-                        <ArrowDownRight className="w-5 h-5 text-destructive" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-foreground truncate">{transaction.description}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-muted-foreground">{transaction.date}</span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground">{transaction.category}</span>
-                      </div>
-                    </div>
-                    <div className={`text-sm font-bold ${transaction.type === 'income' ? 'text-success' : 'text-destructive'}`}>
-                      {transaction.type === 'income' ? '+' : '-'}R$ {transaction.amount.toLocaleString('pt-BR')}
-                    </div>
+                {transactionsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   </div>
-                ))}
+                ) : recentTransactions.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p className="text-sm">Nenhuma transação ainda</p>
+                    <p className="text-xs mt-1">Conecte um banco ou adicione transações manualmente</p>
+                  </div>
+                ) : (
+                  recentTransactions.map((transaction) => {
+                    // Format date
+                    const txDate = new Date(transaction.date);
+                    const now = new Date();
+                    const diffDays = Math.floor((now.getTime() - txDate.getTime()) / (1000 * 60 * 60 * 24));
+                    let dateText = '';
+                    if (diffDays === 0) dateText = 'Hoje';
+                    else if (diffDays === 1) dateText = 'Ontem';
+                    else dateText = `${diffDays} dias atrás`;
+
+                    return (
+                      <div
+                        key={transaction.id}
+                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-background/60 transition-all border border-transparent hover:border-primary/20 cursor-pointer group"
+                      >
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          transaction.type === 'income'
+                            ? 'bg-success/20 group-hover:bg-success/30'
+                            : 'bg-destructive/20 group-hover:bg-destructive/30'
+                        } transition-colors`}>
+                          {transaction.type === 'income' ? (
+                            <ArrowUpRight className="w-5 h-5 text-success" />
+                          ) : (
+                            <ArrowDownRight className="w-5 h-5 text-destructive" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground truncate">{transaction.description}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-muted-foreground">{dateText}</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground capitalize">{transaction.category}</span>
+                            {transaction.synced_from_bank && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">Banco</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className={`text-sm font-bold ${transaction.type === 'income' ? 'text-success' : 'text-destructive'}`}>
+                          {transaction.type === 'income' ? '+' : '-'}R$ {transaction.amount.toLocaleString('pt-BR')}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </CardContent>
             </Card>
           </div>
