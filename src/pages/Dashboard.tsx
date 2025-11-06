@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Brain, TrendingDown, Calendar, AlertTriangle, TrendingUp, ArrowUpRight, ArrowDownRight, DollarSign, Target, Zap, Download, Upload, RefreshCw, Sparkles, ArrowRight, Activity, PieChart, LogOut, User, Settings } from "lucide-react";
+import { Brain, TrendingDown, Calendar, AlertTriangle, TrendingUp, ArrowUpRight, ArrowDownRight, DollarSign, Target, Zap, Download, Upload, RefreshCw, Sparkles, ArrowRight, Activity, PieChart, LogOut, User, Settings, Building2 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import Logo from "@/components/Logo";
 import { Progress } from "@/components/ui/progress";
@@ -258,6 +258,17 @@ const Dashboard = () => {
                 <Calendar className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Últimos {analyzedPeriod} dias</span>
               </div>
+
+              {/* Bank Connection Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/bank-connections')}
+                className="flex items-center gap-2"
+              >
+                <Building2 className="w-4 h-4" />
+                <span className="hidden md:inline">Conectar Banco</span>
+              </Button>
 
               {/* User Menu */}
               <DropdownMenu>

@@ -12,6 +12,7 @@ import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import Success from "./pages/Success";
 import Dashboard from "./pages/Dashboard";
+import BankConnections from "./pages/BankConnections";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -42,6 +43,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bank-connections"
+            element={
+              <ProtectedRoute>
+                <BankConnections />
               </ProtectedRoute>
             }
           />

@@ -5,7 +5,8 @@
       "Bash(npx kill-port:*)",
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Implement complete Supabase authentication and backend integration\n\n- Add Supabase authentication with email/password\n- Create database schema with RLS policies (transactions, goals, projections)\n- Implement auth services and React hooks (useAuth, useTransactions, useFinancialGoals)\n- Add Login and Signup pages with proper validation\n- Create ProtectedRoute component for secure navigation\n- Add user menu with logout functionality to Dashboard\n- Create comprehensive documentation (SETUP.md, OPEN_FINANCE_INTEGRATION.md, DDA_INTEGRATION.md)\n- Configure TypeScript types for database and application\n- Add seed data script for testing\n- Fix environment variables loading with vite.config.ts hardcoding\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": []
