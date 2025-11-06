@@ -1,152 +1,210 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { signupSchema, type SignupInput } from "@/lib/validations";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Mail, Lock, User, Building2 } from "lucide-react";
 import Logo from "@/components/Logo";
-import { useToast } from "@/hooks/use-toast";
 
 const Signup = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [name, setName] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { signup, loading } = useAuth();
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!name.trim() || !whatsapp.trim()) {
-      toast({
-        title: "Atenção",
-        description: "Por favor, preencha todos os campos",
-        variant: "destructive",
-      });
-      return;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignupInput>({
+    resolver: zodResolver(signupSchema),
+  });
+
+  const onSubmit = async (data: SignupInput) => {
+    try {
+      setError("");
+      await signup(data);
+    } catch (err: any) {
+      setError(err.message || "Erro ao criar conta");
     }
-
-    setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      toast({
-        title: "Cadastro realizado! 🎉",
-        description: "A partir de agora, a Finora te avisa antes do aperto.",
-      });
-      navigate("/success");
-    }, 1500);
-  };
-
-  const formatWhatsApp = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    if (numbers.length <= 11) {
-      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-    }
-    return value;
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] animate-pulse-glow" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[100px] animate-pulse-glow" style={{ animationDelay: '1.5s' }} />
+      </div>
+
       {/* Header */}
-      <div className="w-full max-w-md mb-6 animate-fade-in">
-        <button
-          onClick={() => navigate("/results")}
+      <div className="w-full max-w-md mb-6 animate-fade-in relative z-10">
+        <Link
+          to="/"
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
           Voltar
-        </button>
+        </Link>
         <div className="flex justify-center">
           <Logo size="md" />
         </div>
       </div>
 
       {/* Main Content */}
-      <Card className="w-full max-w-md p-8 space-y-6 animate-fade-in-up">
+      <Card className="w-full max-w-md p-8 space-y-6 animate-fade-in-up relative z-10 border-0 bg-card/95 backdrop-blur-xl shadow-2xl">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-foreground">
-            Últimas informações
+            Criar Conta
           </h1>
           <p className="text-muted-foreground">
-            Para te enviar alertas personalizados
+            Comece a gerenciar seu fluxo de caixa
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {error && (
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          {/* Email */}
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-foreground font-medium">
-              Seu nome
+            <Label htmlFor="email" className="text-sm font-semibold">
+              Email
             </Label>
-            <Input
-              id="name"
-              type="text"
-              placeholder="João Silva"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="h-12 text-base"
-              disabled={isSubmitting}
-            />
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                className="pl-10 h-12"
+                {...register("email")}
+              />
+            </div>
+            {errors.email && (
+              <p className="text-xs text-destructive">{errors.email.message}</p>
+            )}
           </div>
 
+          {/* Senha */}
           <div className="space-y-2">
-            <Label htmlFor="whatsapp" className="text-foreground font-medium">
-              WhatsApp
+            <Label htmlFor="password" className="text-sm font-semibold">
+              Senha
             </Label>
-            <Input
-              id="whatsapp"
-              type="tel"
-              placeholder="(11) 98765-4321"
-              value={whatsapp}
-              onChange={(e) => setWhatsapp(formatWhatsApp(e.target.value))}
-              className="h-12 text-base"
-              maxLength={15}
-              disabled={isSubmitting}
-            />
-            <p className="text-xs text-muted-foreground">
-              Enviaremos alertas por WhatsApp quando seu caixa precisar de atenção
-            </p>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                className="pl-10 h-12"
+                {...register("password")}
+              />
+            </div>
+            {errors.password && (
+              <p className="text-xs text-destructive">{errors.password.message}</p>
+            )}
+            <p className="text-xs text-muted-foreground">Mínimo 6 caracteres</p>
           </div>
 
-          <Button 
-            type="submit" 
-            variant="gradient" 
-            size="lg" 
+          {/* Nome */}
+          <div className="space-y-2">
+            <Label htmlFor="fullName" className="text-sm font-semibold">
+              Nome Completo (opcional)
+            </Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="João Silva"
+                className="pl-10 h-12"
+                {...register("fullName")}
+              />
+            </div>
+            {errors.fullName && (
+              <p className="text-xs text-destructive">{errors.fullName.message}</p>
+            )}
+          </div>
+
+          {/* Empresa */}
+          <div className="space-y-2">
+            <Label htmlFor="companyName" className="text-sm font-semibold">
+              Nome da Empresa (opcional)
+            </Label>
+            <div className="relative">
+              <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                id="companyName"
+                type="text"
+                placeholder="Minha Empresa Ltda"
+                className="pl-10 h-12"
+                {...register("companyName")}
+              />
+            </div>
+            {errors.companyName && (
+              <p className="text-xs text-destructive">{errors.companyName.message}</p>
+            )}
+          </div>
+
+          <Button
+            type="submit"
+            variant="gradient"
+            size="lg"
             className="w-full"
-            disabled={isSubmitting}
+            disabled={loading}
           >
-            {isSubmitting ? "Cadastrando..." : "Começar a receber alertas"}
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                Criando conta...
+              </div>
+            ) : (
+              "Criar conta gratuita"
+            )}
           </Button>
         </form>
 
         {/* Benefits */}
         <div className="pt-4 space-y-3 border-t border-border">
-          <p className="text-sm font-semibold text-foreground">O que você vai receber:</p>
+          <p className="text-sm font-semibold text-foreground">O que você ganha:</p>
           <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="p-1 rounded-full bg-success/10">
+                <Check className="w-4 h-4 text-success" />
+              </div>
+              <span className="text-sm text-muted-foreground">Dashboard completo de fluxo de caixa</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="p-1 rounded-full bg-success/10">
+                <Check className="w-4 h-4 text-success" />
+              </div>
+              <span className="text-sm text-muted-foreground">Projeções inteligentes com IA</span>
+            </div>
             <div className="flex items-center gap-3">
               <div className="p-1 rounded-full bg-success/10">
                 <Check className="w-4 h-4 text-success" />
               </div>
               <span className="text-sm text-muted-foreground">Alertas antes do caixa zerar</span>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="p-1 rounded-full bg-success/10">
-                <Check className="w-4 h-4 text-success" />
-              </div>
-              <span className="text-sm text-muted-foreground">Sugestões práticas personalizadas</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="p-1 rounded-full bg-success/10">
-                <Check className="w-4 h-4 text-success" />
-              </div>
-              <span className="text-sm text-muted-foreground">Previsões semanais do seu fluxo</span>
-            </div>
           </div>
         </div>
 
+        <div className="text-center text-sm text-muted-foreground">
+          Já tem uma conta?{" "}
+          <Link to="/login" className="text-primary font-semibold hover:underline">
+            Fazer login
+          </Link>
+        </div>
+
         <p className="text-xs text-center text-muted-foreground">
-          Seus dados são privados e seguros. Não compartilhamos com terceiros.
+          Seus dados são protegidos e não compartilhamos com terceiros.
         </p>
       </Card>
     </div>
