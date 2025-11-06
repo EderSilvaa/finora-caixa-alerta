@@ -9,6 +9,7 @@ import { syncService } from '@/services/sync.service'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
+import { BankConsentModal } from './BankConsentModal'
 
 declare global {
   interface Window {
@@ -33,6 +34,8 @@ export function ConnectBank() {
   const [connections, setConnections] = useState<BankConnection[]>([])
   const [loadingConnections, setLoadingConnections] = useState(true)
   const [pluggyInstance, setPluggyInstance] = useState<any>(null)
+  const [showConsentModal, setShowConsentModal] = useState(false)
+  const [userConsent, setUserConsent] = useState(false)
 
   // Load Pluggy Connect script (only once)
   useEffect(() => {
@@ -102,8 +105,40 @@ export function ConnectBank() {
       return
     }
 
+    // Show consent modal first
+    setShowConsentModal(true)
+  }
+
+  const handleConsentAccept = async () => {
+    setShowConsentModal(false)
+    setUserConsent(true)
+
     try {
       setLoading(true)
+
+      // Get user's IP address for consent tracking
+      let ipAddress = 'unknown'
+      try {
+        const ipResponse = await fetch('https://api.ipify.org?format=json')
+        const ipData = await ipResponse.json()
+        ipAddress = ipData.ip
+      } catch (ipError) {
+        console.warn('Could not fetch IP address:', ipError)
+      }
+
+      // Save consent to database
+      const { error: consentError } = await supabase
+        .from('bank_connections')
+        .update({
+          consent_given_at: new Date().toISOString(),
+          consent_ip_address: ipAddress,
+        })
+        .eq('user_id', user?.id)
+        .is('consent_given_at', null) // Only update connections without consent
+
+      if (consentError) {
+        console.error('Error saving consent:', consentError)
+      }
 
       // Create connect token
       const { accessToken } = await pluggyService.createConnectToken()
@@ -120,7 +155,7 @@ export function ConnectBank() {
           includeSandbox: import.meta.env.DEV, // Include sandbox banks in development
           onSuccess: async (itemData: any) => {
             console.log('Bank connected successfully:', itemData)
-            await handleConnectionSuccess(itemData)
+            await handleConnectionSuccess(itemData, ipAddress)
           },
           onError: (error: any) => {
             console.error('Pluggy Connect error:', error)
@@ -150,11 +185,21 @@ export function ConnectBank() {
     }
   }
 
-  const handleConnectionSuccess = async (itemData: any) => {
+  const handleConsentDecline = () => {
+    setShowConsentModal(false)
+    setUserConsent(false)
+    toast({
+      title: 'Consentimento negado',
+      description: 'Para conectar sua conta bancária, é necessário aceitar os termos de consentimento.',
+      variant: 'default',
+    })
+  }
+
+  const handleConnectionSuccess = async (itemData: any, ipAddress: string = 'unknown') => {
     try {
       if (!user?.id) return
 
-      // Save bank connection to Supabase
+      // Save bank connection to Supabase with consent data
       const { error } = await supabase.from('bank_connections').insert({
         user_id: user.id,
         pluggy_item_id: itemData.item.id,
@@ -162,6 +207,8 @@ export function ConnectBank() {
         connector_name: itemData.item.connector.name,
         connector_image_url: itemData.item.connector.imageUrl,
         status: itemData.item.status,
+        consent_given_at: new Date().toISOString(),
+        consent_ip_address: ipAddress,
       })
 
       if (error) throw error
@@ -309,17 +356,25 @@ export function ConnectBank() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="w-5 h-5" />
-            Conectar Banco
-          </CardTitle>
-          <CardDescription>
-            Conecte sua conta bancária para sincronizar automaticamente suas transações via Open Finance Brasil
-          </CardDescription>
-        </CardHeader>
+    <>
+      <BankConsentModal
+        open={showConsentModal}
+        onOpenChange={setShowConsentModal}
+        onAccept={handleConsentAccept}
+        onDecline={handleConsentDecline}
+      />
+
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5" />
+              Conectar Banco
+            </CardTitle>
+            <CardDescription>
+              Conecte sua conta bancária para sincronizar automaticamente suas transações via Open Finance Brasil
+            </CardDescription>
+          </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-3">
             <Button
@@ -426,5 +481,6 @@ export function ConnectBank() {
         </CardContent>
       </Card>
     </div>
+    </>
   )
 }
