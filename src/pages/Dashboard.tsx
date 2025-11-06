@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useTransactionStats } from "@/hooks/useTransactionStats";
 import { useTransactions } from "@/hooks/useTransactions";
+import { useAutoSync } from "@/hooks/useAutoSync";
+import { useEffect } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +32,19 @@ const Dashboard = () => {
   // Fetch real data from Supabase
   const { stats, monthlyData, cashFlowProjection, daysUntilZero } = useTransactionStats();
   const { transactions, loading: transactionsLoading, addTransaction } = useTransactions();
+
+  // Auto-sync functionality
+  const { syncStatus, manualSync, getLastSyncText } = useAutoSync();
+
+  // Show toast when auto-sync starts and completes
+  useEffect(() => {
+    if (syncStatus.isSyncing) {
+      toast({
+        title: "Sincronizando transações",
+        description: "Buscando novas transações dos seus bancos conectados...",
+      });
+    }
+  }, [syncStatus.isSyncing]);
 
   const handleLogout = async () => {
     try {
@@ -253,6 +268,16 @@ const Dashboard = () => {
                 <Calendar className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Últimos {analyzedPeriod} dias</span>
               </div>
+
+              {/* Last Sync Indicator */}
+              {syncStatus.lastSyncAt && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/30">
+                  <RefreshCw className={`w-4 h-4 text-primary ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
+                  <span className="text-sm text-primary hidden md:inline">
+                    Sync: {getLastSyncText()}
+                  </span>
+                </div>
+              )}
 
               {/* Bank Connection Button */}
               <Button
@@ -668,14 +693,24 @@ const Dashboard = () => {
                     variant="ghost"
                     size="sm"
                     className="h-8 w-8 p-0 hover:bg-primary/10"
-                    onClick={() => {
-                      toast({
-                        title: "Atualizado!",
-                        description: "Transações sincronizadas",
-                      });
+                    disabled={syncStatus.isSyncing}
+                    onClick={async () => {
+                      try {
+                        await manualSync();
+                        toast({
+                          title: "Sincronizado!",
+                          description: "Transações atualizadas com sucesso",
+                        });
+                      } catch (error: any) {
+                        toast({
+                          title: "Erro ao sincronizar",
+                          description: error.message,
+                          variant: "destructive",
+                        });
+                      }
                     }}
                   >
-                    <RefreshCw className="w-4 h-4" />
+                    <RefreshCw className={`w-4 h-4 ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
                   </Button>
                 </div>
               </CardHeader>
