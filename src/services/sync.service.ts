@@ -17,6 +17,8 @@ export const syncService = {
    * @param daysBack - Number of days to sync back (default: 90)
    */
   async syncAllTransactions(userId: string, daysBack: number = 90): Promise<SyncResult> {
+    console.log('[SYNC] syncAllTransactions STARTED for user:', userId, 'daysBack:', daysBack)
+
     const result: SyncResult = {
       success: false,
       newTransactions: 0,
@@ -25,28 +27,48 @@ export const syncService = {
     }
 
     try {
-      // Get all bank connections for the user
+      console.log('[SYNC] About to fetch bank_connections from Supabase...')
+
+      // Get all bank connections for the user (ACTIVE or UPDATED status)
       const { data: connections, error: connectionsError } = await supabase
         .from('bank_connections')
         .select('*')
         .eq('user_id', userId)
-        .eq('status', 'ACTIVE')
+        .or('status.eq.ACTIVE,status.eq.UPDATED')
 
-      if (connectionsError) throw connectionsError
+      console.log('[SYNC] Connections query result:', {
+        connectionsCount: connections?.length,
+        error: connectionsError,
+        connections: connections
+      })
+
+      if (connectionsError) {
+        console.error('[SYNC] Error fetching connections:', connectionsError)
+        throw connectionsError
+      }
 
       if (!connections || connections.length === 0) {
+        console.warn('[SYNC] No active or updated bank connections found')
         result.errors.push('No active bank connections found')
         return result
       }
 
+      console.log('[SYNC] Starting to sync', connections.length, 'connections')
+
       // Sync each connection
       for (const connection of connections) {
         try {
+          console.log(`[SYNC] Processing connection ${connection.id} (${connection.connector_name})`)
+          console.log(`[SYNC] Pluggy Item ID: ${connection.pluggy_item_id}`)
+
           const connectionResult = await this.syncConnectionTransactions(
             userId,
             connection.pluggy_item_id,
             daysBack
           )
+
+          console.log(`[SYNC] Connection ${connection.id} result:`, connectionResult)
+
           result.newTransactions += connectionResult.newTransactions
           result.updatedTransactions += connectionResult.updatedTransactions
           result.errors.push(...connectionResult.errors)
@@ -56,10 +78,15 @@ export const syncService = {
             .from('bank_connections')
             .update({ last_synced_at: new Date().toISOString() })
             .eq('id', connection.id)
+
+          console.log(`[SYNC] Updated last_synced_at for connection ${connection.id}`)
         } catch (error: any) {
+          console.error(`[SYNC] Error syncing connection ${connection.id}:`, error)
           result.errors.push(`Error syncing ${connection.connector_name}: ${error.message}`)
         }
       }
+
+      console.log('[SYNC] All connections processed. Final result:', result)
 
       result.success = result.errors.length === 0
       return result
@@ -86,7 +113,9 @@ export const syncService = {
 
     try {
       // Get all accounts for this connection
+      console.log(`[SYNC] Fetching accounts for item ${itemId}...`)
       const accounts = await pluggyService.getAccounts(itemId)
+      console.log(`[SYNC] Found ${accounts.length} accounts:`, accounts.map(a => ({ id: a.id, name: a.name, type: a.type })))
 
       // Calculate date range
       const toDate = new Date()
@@ -96,9 +125,13 @@ export const syncService = {
       const from = fromDate.toISOString().split('T')[0] // YYYY-MM-DD
       const to = toDate.toISOString().split('T')[0]
 
+      console.log(`[SYNC] Date range: ${from} to ${to} (${daysBack} days)`)
+
       // Sync transactions for each account
       for (const account of accounts) {
         try {
+          console.log(`[SYNC] Processing account ${account.id} (${account.name})`)
+
           // Get transactions from Pluggy
           const pluggyTransactions = await pluggyService.getTransactions(
             account.id,
@@ -106,30 +139,49 @@ export const syncService = {
             to
           )
 
+          console.log(`[SYNC] Found ${pluggyTransactions.length} transactions for account ${account.name}`)
+
           // Get corresponding bank_account from Supabase
-          const { data: bankAccount } = await supabase
+          const { data: bankAccount, error: bankAccountError } = await supabase
             .from('bank_accounts')
             .select('id')
             .eq('pluggy_account_id', account.id)
             .single()
 
+          if (bankAccountError) {
+            console.error(`[SYNC] Error fetching bank account:`, bankAccountError)
+            result.errors.push(`Error fetching bank account: ${bankAccountError.message}`)
+            continue
+          }
+
           if (!bankAccount) {
+            console.error(`[SYNC] Bank account not found for Pluggy account ${account.id}`)
             result.errors.push(`Bank account not found for Pluggy account ${account.id}`)
             continue
           }
 
+          console.log(`[SYNC] Found bank_account ${bankAccount.id} for Pluggy account ${account.id}`)
+
           // Process each transaction
           for (const pluggyTx of pluggyTransactions) {
             try {
+              console.log(`[SYNC] Processing transaction ${pluggyTx.id}...`)
+
               // Check if transaction already exists
-              const { data: existing } = await supabase
+              const { data: existing, error: existingError } = await supabase
                 .from('transactions')
                 .select('id')
                 .eq('pluggy_transaction_id', pluggyTx.id)
-                .single()
+                .maybeSingle()
+
+              if (existingError) {
+                console.error(`[SYNC] Error checking existing transaction:`, existingError)
+                result.errors.push(`Error checking transaction ${pluggyTx.id}: ${existingError.message}`)
+                continue
+              }
 
               if (existing) {
-                // Transaction already exists, skip
+                console.log(`[SYNC] Transaction ${pluggyTx.id} already exists, skipping`)
                 continue
               }
 
@@ -139,25 +191,33 @@ export const syncService = {
                 userId
               )
 
+              console.log(`[SYNC] Formatted transaction:`, formattedTx)
+
               // Add bank_account_id
               const txToInsert = {
                 ...formattedTx,
                 bank_account_id: bankAccount.id,
               }
 
+              console.log(`[SYNC] Transaction to insert:`, txToInsert)
+
               // Insert transaction
-              const { error: insertError } = await supabase
+              const { data: insertedData, error: insertError } = await supabase
                 .from('transactions')
                 .insert(txToInsert)
+                .select()
 
               if (insertError) {
+                console.error(`[SYNC] Error inserting transaction ${pluggyTx.id}:`, insertError)
                 result.errors.push(
                   `Error inserting transaction ${pluggyTx.id}: ${insertError.message}`
                 )
               } else {
+                console.log(`[SYNC] Successfully inserted transaction ${pluggyTx.id}`)
                 result.newTransactions++
               }
             } catch (error: any) {
+              console.error(`[SYNC] Exception processing transaction ${pluggyTx.id}:`, error)
               result.errors.push(
                 `Error processing transaction ${pluggyTx.id}: ${error.message}`
               )
@@ -193,7 +253,7 @@ export const syncService = {
         .from('bank_connections')
         .select('*')
         .eq('user_id', userId)
-        .eq('status', 'ACTIVE')
+        .or('status.eq.ACTIVE,status.eq.UPDATED')
 
       if (connectionsError) throw connectionsError
 

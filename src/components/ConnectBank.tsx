@@ -199,8 +199,16 @@ export function ConnectBank() {
     try {
       if (!user?.id) return
 
-      // Save bank connection to Supabase with consent data
-      const { error } = await supabase.from('bank_connections').insert({
+      // Save bank connection to Supabase with consent data and get the created record
+      console.log('Attempting to save connection:', {
+        user_id: user.id,
+        pluggy_item_id: itemData.item.id,
+        pluggy_connector_id: itemData.item.connector.id,
+        connector_name: itemData.item.connector.name,
+        status: itemData.item.status,
+      })
+
+      const connectionPayload = {
         user_id: user.id,
         pluggy_item_id: itemData.item.id,
         pluggy_connector_id: itemData.item.connector.id,
@@ -209,17 +217,69 @@ export function ConnectBank() {
         status: itemData.item.status,
         consent_given_at: new Date().toISOString(),
         consent_ip_address: ipAddress,
+      }
+
+      console.log('[BANK] Inserting connection with payload:', JSON.stringify(connectionPayload, null, 2))
+
+      // Verify Supabase auth
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser()
+      console.log('[BANK] Supabase auth check:', {
+        isAuthenticated: !!supabaseUser,
+        supabaseUserId: supabaseUser?.id,
+        payloadUserId: user.id,
+        idsMatch: supabaseUser?.id === user.id
       })
 
-      if (error) throw error
+      console.log('[BANK] About to call supabase.from...')
+
+      let connectionData, error
+
+      try {
+        const insertResult = await supabase
+          .from('bank_connections')
+          .insert(connectionPayload)
+          .select()
+          .single()
+
+        console.log('[BANK] Insert completed. Full result:', insertResult)
+
+        connectionData = insertResult.data
+        error = insertResult.error
+
+        console.log('[BANK] Extracted data and error:', {
+          hasData: !!connectionData,
+          hasError: !!error,
+          errorMessage: error?.message,
+          dataId: connectionData?.id
+        })
+      } catch (insertError: any) {
+        console.error('[BANK] EXCEPTION during insert:', insertError)
+        throw insertError
+      }
+
+      if (error) {
+        console.error('[BANK] Supabase insertion error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        })
+        throw error
+      }
+      if (!connectionData) {
+        console.error('[BANK] No data returned from insert')
+        throw new Error('Failed to create bank connection')
+      }
+
+      console.log('[BANK] Connection saved successfully:', connectionData.id)
 
       // Fetch accounts for this connection
       const accounts = await pluggyService.getAccounts(itemData.item.id)
 
-      // Save accounts to Supabase
+      // Save accounts to Supabase using the UUID from bank_connections
       const accountsToInsert = accounts.map((account) => ({
         user_id: user.id,
-        bank_connection_id: itemData.item.id,
+        bank_connection_id: connectionData.id, // Use the UUID from the created connection
         pluggy_account_id: account.id,
         account_type: account.type,
         account_subtype: account.subtype,
@@ -236,11 +296,36 @@ export function ConnectBank() {
 
       toast({
         title: 'Banco conectado!',
-        description: `${itemData.item.connector.name} conectado com sucesso.`,
+        description: `${itemData.item.connector.name} conectado com sucesso. Sincronizando transações...`,
       })
 
       // Refresh connections list
       fetchConnections()
+
+      // Auto-sync transactions after first connection
+      try {
+        const syncResult = await syncService.syncAllTransactions(user.id, 90)
+
+        if (syncResult.success || syncResult.newTransactions > 0) {
+          toast({
+            title: 'Transações sincronizadas!',
+            description: `${syncResult.newTransactions} transações importadas dos últimos 90 dias.`,
+          })
+        } else if (syncResult.errors.length > 0) {
+          toast({
+            title: 'Sincronização parcial',
+            description: `${syncResult.newTransactions} transações importadas. Alguns erros ocorreram.`,
+            variant: 'default',
+          })
+        }
+      } catch (syncError: any) {
+        console.error('Error during auto-sync:', syncError)
+        toast({
+          title: 'Erro na sincronização automática',
+          description: 'Use o botão "Sincronizar transações" para tentar novamente.',
+          variant: 'default',
+        })
+      }
     } catch (error: any) {
       console.error('Error saving bank connection:', error)
       toast({
@@ -395,26 +480,24 @@ export function ConnectBank() {
               )}
             </Button>
 
-            {connections.length > 0 && (
-              <Button
-                onClick={handleSyncTransactions}
-                disabled={syncing}
-                variant="outline"
-                className="w-full md:w-auto"
-              >
-                {syncing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Sincronizando...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Sincronizar transações
-                  </>
-                )}
-              </Button>
-            )}
+            <Button
+              onClick={handleSyncTransactions}
+              disabled={syncing || connections.length === 0}
+              variant="outline"
+              className="w-full md:w-auto"
+            >
+              {syncing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Sincronizando...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Sincronizar transações
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>

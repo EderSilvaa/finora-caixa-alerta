@@ -59,6 +59,10 @@ async function getApiKey(): Promise<string> {
   }
 
   try {
+    console.log('[PLUGGY AUTH] Attempting authentication...')
+    console.log('[PLUGGY AUTH] Client ID:', clientId)
+    console.log('[PLUGGY AUTH] Client Secret exists:', !!clientSecret)
+
     const response = await fetch(`${PLUGGY_API_BASE}/auth`, {
       method: 'POST',
       headers: {
@@ -70,18 +74,24 @@ async function getApiKey(): Promise<string> {
       }),
     })
 
+    console.log('[PLUGGY AUTH] Response status:', response.status)
+
+    const responseText = await response.text()
+    console.log('[PLUGGY AUTH] Response body:', responseText)
+
     if (!response.ok) {
-      throw new Error(`Pluggy auth failed: ${response.statusText}`)
+      throw new Error(`Pluggy auth failed: ${response.status} - ${responseText}`)
     }
 
-    const data = await response.json()
+    const data = JSON.parse(responseText)
     cachedApiKey = data.apiKey
     // Cache for 23 hours (API key valid for 24h)
     apiKeyExpiry = Date.now() + 23 * 60 * 60 * 1000
 
+    console.log('[PLUGGY AUTH] Authentication successful!')
     return cachedApiKey!
   } catch (error: any) {
-    console.error('Error authenticating with Pluggy:', error)
+    console.error('[PLUGGY AUTH] Error:', error)
     throw new Error('Failed to authenticate with Pluggy')
   }
 }
@@ -243,8 +253,6 @@ export const pluggyService = {
     amount: number
     description: string
     date: string
-    payment_method: string
-    is_recurring: boolean
     pluggy_transaction_id: string
     pluggy_account_id: string
     synced_from_bank: boolean
@@ -256,8 +264,6 @@ export const pluggyService = {
       amount: Math.abs(transaction.amount),
       description: transaction.description,
       date: transaction.date,
-      payment_method: 'bank_transfer',
-      is_recurring: false,
       pluggy_transaction_id: transaction.id,
       pluggy_account_id: transaction.accountId,
       synced_from_bank: true,
