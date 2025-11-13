@@ -24,6 +24,11 @@ export interface CashFlowProjection {
   balance: number
 }
 
+interface TransactionData {
+  type: 'income' | 'expense'
+  amount: number
+}
+
 export function useTransactionStats() {
   const { user } = useAuth()
   const [stats, setStats] = useState<TransactionStats>({
@@ -60,7 +65,7 @@ export function useTransactionStats() {
           .select('type, amount')
           .eq('user_id', user.id)
           .gte('date', currentMonthStart.toISOString())
-          .lte('date', currentMonthEnd.toISOString())
+          .lte('date', currentMonthEnd.toISOString()) as { data: TransactionData[] | null; error: any }
 
         if (currentError) throw currentError
 
@@ -70,7 +75,7 @@ export function useTransactionStats() {
           .select('type, amount')
           .eq('user_id', user.id)
           .gte('date', previousMonthStart.toISOString())
-          .lte('date', previousMonthEnd.toISOString())
+          .lte('date', previousMonthEnd.toISOString()) as { data: TransactionData[] | null; error: any }
 
         if (previousError) throw previousError
 
@@ -97,7 +102,7 @@ export function useTransactionStats() {
         const { data: allTransactions, error: allError } = await supabase
           .from('transactions')
           .select('type, amount')
-          .eq('user_id', user.id)
+          .eq('user_id', user.id) as { data: TransactionData[] | null; error: any }
 
         if (allError) throw allError
 
@@ -156,7 +161,7 @@ export function useTransactionStats() {
           .select('type, amount')
           .eq('user_id', user.id)
           .gte('date', monthStart.toISOString())
-          .lte('date', monthEnd.toISOString())
+          .lte('date', monthEnd.toISOString()) as { data: TransactionData[] | null; error: any }
 
         if (error) throw error
 
@@ -187,21 +192,34 @@ export function useTransactionStats() {
     monthlyRevenue: number,
     monthlyExpenses: number
   ) => {
-    // Simple projection: assume current revenue/expense pattern continues
+    // Calculate daily average net cash flow
     const dailyNet = (monthlyRevenue - monthlyExpenses) / 30
     const projection: CashFlowProjection[] = []
 
     let balance = currentBalance
 
-    // Project for next 102 days
-    for (let day = 0; day <= 102; day += 15) {
+    // Project for next 102 days with more granular data points (every 3 days)
+    for (let day = 0; day <= 102; day += 3) {
       projection.push({
         day,
-        balance: Math.max(0, Math.round(balance)),
+        balance: Math.round(balance),
       })
-      balance += dailyNet * 15
+      balance += dailyNet * 3
+
+      // Add some realistic variance (+/- 5%)
+      const variance = (Math.random() - 0.5) * 0.1
+      balance = balance * (1 + variance)
     }
 
+    // Ensure we have the final day (102)
+    if (projection[projection.length - 1].day !== 102) {
+      projection.push({
+        day: 102,
+        balance: Math.round(balance),
+      })
+    }
+
+    console.log('[useTransactionStats] Generated cash flow projection:', projection.length, 'points')
     setCashFlowProjection(projection)
   }
 

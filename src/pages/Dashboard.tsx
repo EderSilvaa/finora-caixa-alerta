@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTransactionStats } from "@/hooks/useTransactionStats";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useAutoSync } from "@/hooks/useAutoSync";
+import { useAI } from "@/hooks/useAI";
 import { useEffect } from "react";
 import {
   DropdownMenu,
@@ -35,6 +36,18 @@ const Dashboard = () => {
 
   // Auto-sync functionality
   const { syncStatus, manualSync, getLastSyncText } = useAutoSync();
+
+  // AI Features
+  const {
+    insights,
+    balancePrediction,
+    spendingPatterns,
+    anomalies,
+    loading: aiLoading,
+    error: aiError,
+    isConfigured: isAIConfigured,
+    runFullAnalysis,
+  } = useAI();
 
   // Show toast when auto-sync starts and completes
   useEffect(() => {
@@ -176,17 +189,43 @@ const Dashboard = () => {
     }
   };
 
-  // Função para simular análise de IA
-  const handleAIAnalysis = () => {
+  // Função para análise de IA com GPT-4o
+  const handleAIAnalysis = async () => {
+    if (!isAIConfigured) {
+      toast({
+        title: "API Key do OpenAI necessária",
+        description: "Configure a API key do OpenAI no arquivo .env.local",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsAnalyzing(true);
     setShowAIAnalysis(true);
     setAiAnalysisComplete(false);
 
-    // Simula processamento de IA
-    setTimeout(() => {
+    try {
+      // Executa análise completa com GPT-4o
+      await runFullAnalysis();
+
       setIsAnalyzing(false);
       setAiAnalysisComplete(true);
-    }, 3000);
+
+      toast({
+        title: "Análise concluída!",
+        description: "Insights de IA gerados com sucesso",
+      });
+    } catch (error: any) {
+      console.error('Error running AI analysis:', error);
+      setIsAnalyzing(false);
+      setAiAnalysisComplete(false);
+
+      toast({
+        title: "Erro na análise",
+        description: error.message || "Não foi possível gerar insights",
+        variant: "destructive"
+      });
+    }
   };
 
   // Função para nova projeção
@@ -203,44 +242,38 @@ const Dashboard = () => {
     }, 2500);
   };
 
-  // Insights de IA simulados
-  const aiInsights = [
-    {
-      title: "Padrão Identificado",
-      description: "Suas despesas com fornecedores aumentaram 23% nas últimas 3 semanas. Isso pode impactar sua margem de lucro.",
-      type: "warning",
-      action: "Revisar contratos",
-      icon: AlertTriangle
-    },
-    {
-      title: "Oportunidade de Economia",
-      description: "Baseado no seu histórico, você pode economizar R$ 1.850/mês renegociando o aluguel e serviços.",
-      type: "success",
-      action: "Ver detalhes",
-      icon: TrendingUp
-    },
-    {
-      title: "Risco de Fluxo",
-      description: "Com o padrão atual, há 78% de chance de caixa negativo em 12 dias. Recomendamos antecipar recebíveis.",
-      type: "danger",
-      action: "Simular antecipação",
-      icon: Activity
-    },
-    {
-      title: "Crescimento Sustentável",
-      description: "Sua receita cresceu 8.5% vs mês anterior. Mantenha esse ritmo para atingir suas metas trimestrais.",
-      type: "success",
-      action: "Ver projeção",
-      icon: ArrowUpRight
-    },
-    {
-      title: "Análise de Sazonalidade",
-      description: "Detectamos um padrão sazonal: suas vendas aumentam 35% na segunda quinzena. Otimize seu estoque.",
-      type: "info",
-      action: "Planejar estoque",
-      icon: PieChart
+  // Map AI insight severity to card type
+  const getInsightType = (severity: string) => {
+    switch (severity) {
+      case 'high':
+        return 'danger';
+      case 'medium':
+        return 'warning';
+      case 'low':
+        return 'success';
+      default:
+        return 'info';
     }
-  ];
+  };
+
+  const getInsightIcon = (category: string) => {
+    switch (category) {
+      case 'spending':
+        return TrendingDown;
+      case 'income':
+        return TrendingUp;
+      case 'balance':
+        return DollarSign;
+      case 'savings':
+        return Target;
+      case 'risk':
+        return AlertTriangle;
+      case 'opportunity':
+        return Sparkles;
+      default:
+        return Activity;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -557,44 +590,60 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-3">
-                  <div className="p-4 rounded-xl bg-background/60 backdrop-blur-sm border border-primary/20 hover:border-primary/40 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
-                        <Sparkles className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-foreground leading-relaxed">
-                          <span className="font-semibold text-primary">Recomendação:</span> Antecipe R$ 1.200 em recebíveis para manter fluxo positivo.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  {/* Show AI insights preview if available */}
+                  {isAIConfigured && insights.length > 0 ? (
+                    insights.slice(0, 3).map((insight, index) => {
+                      const insightType = getInsightType(insight.severity);
+                      const Icon = getInsightIcon(insight.category);
+                      const colorClass = insightType === 'danger' ? 'destructive' : insightType === 'warning' ? 'warning' : insightType === 'success' ? 'success' : 'primary';
 
-                  <div className="p-4 rounded-xl bg-background/60 backdrop-blur-sm border border-warning/20 hover:border-warning/40 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-warning/20 flex items-center justify-center flex-shrink-0">
-                        <AlertTriangle className="w-4 h-4 text-warning" />
+                      return (
+                        <div key={index} className={`p-4 rounded-xl bg-background/60 backdrop-blur-sm border border-${colorClass}/20 hover:border-${colorClass}/40 transition-colors`}>
+                          <div className="flex items-start gap-3">
+                            <div className={`w-8 h-8 rounded-lg bg-${colorClass}/20 flex items-center justify-center flex-shrink-0`}>
+                              <Icon className={`w-4 h-4 text-${colorClass}`} />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-xs text-foreground leading-relaxed">
+                                <span className={`font-semibold text-${colorClass}`}>{insight.title}:</span> {insight.description.substring(0, 80)}...
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <>
+                      {/* Default placeholder insights */}
+                      <div className="p-4 rounded-xl bg-background/60 backdrop-blur-sm border border-muted/20">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-muted/20 flex items-center justify-center flex-shrink-0">
+                            <Brain className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              {!isAIConfigured
+                                ? 'Configure a API do OpenAI para ver insights personalizados'
+                                : 'Clique em "Ver Análise Completa" para gerar insights de IA'}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-foreground leading-relaxed">
-                          <span className="font-semibold text-warning">Oportunidade:</span> Despesas variáveis subiram 15%. Revise contratos.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="p-4 rounded-xl bg-background/60 backdrop-blur-sm border border-success/20 hover:border-success/40 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-success/20 flex items-center justify-center flex-shrink-0">
-                        <TrendingUp className="w-4 h-4 text-success" />
+                      <div className="p-4 rounded-xl bg-background/60 backdrop-blur-sm border border-success/20 hover:border-success/40 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-success/20 flex items-center justify-center flex-shrink-0">
+                            <TrendingUp className="w-4 h-4 text-success" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs text-foreground leading-relaxed">
+                              <span className="font-semibold text-success">Positivo:</span> Receita cresceu {monthlyGrowth}% nas últimas 2 semanas.
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-foreground leading-relaxed">
-                          <span className="font-semibold text-success">Positivo:</span> Receita cresceu {monthlyGrowth}% nas últimas 2 semanas.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                    </>
+                  )}
                 </div>
 
                 <Button
@@ -930,64 +979,213 @@ const Dashboard = () => {
             </div>
           ) : aiAnalysisComplete ? (
             <div className="space-y-4 py-6">
-              {aiInsights.map((insight, index) => {
-                const Icon = insight.icon;
-                return (
-                  <Card key={index} className={`border-l-4 transition-all hover:shadow-lg ${
-                    insight.type === 'success' ? 'border-l-success bg-success/5 hover:bg-success/10' :
-                    insight.type === 'warning' ? 'border-l-warning bg-warning/5 hover:bg-warning/10' :
-                    insight.type === 'danger' ? 'border-l-destructive bg-destructive/5 hover:bg-destructive/10' :
-                    'border-l-primary bg-primary/5 hover:bg-primary/10'
-                  }`}>
+              {/* AI Error State */}
+              {aiError && (
+                <Card className="border-l-4 border-l-destructive bg-destructive/5">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-destructive/20 flex items-center justify-center">
+                        <AlertTriangle className="w-5 h-5 text-destructive" />
+                      </div>
+                      <span>Erro na Análise</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">{aiError}</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Financial Insights */}
+              {insights.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                    Insights Financeiros
+                  </h3>
+                  {insights.map((insight, index) => {
+                    const insightType = getInsightType(insight.severity);
+                    const Icon = getInsightIcon(insight.category);
+
+                    return (
+                      <Card key={index} className={`border-l-4 transition-all hover:shadow-lg ${
+                        insightType === 'success' ? 'border-l-success bg-success/5 hover:bg-success/10' :
+                        insightType === 'warning' ? 'border-l-warning bg-warning/5 hover:bg-warning/10' :
+                        insightType === 'danger' ? 'border-l-destructive bg-destructive/5 hover:bg-destructive/10' :
+                        'border-l-primary bg-primary/5 hover:bg-primary/10'
+                      }`}>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                insightType === 'success' ? 'bg-success/20' :
+                                insightType === 'warning' ? 'bg-warning/20' :
+                                insightType === 'danger' ? 'bg-destructive/20' :
+                                'bg-primary/20'
+                              }`}>
+                                <Icon className={`w-5 h-5 ${
+                                  insightType === 'success' ? 'text-success' :
+                                  insightType === 'warning' ? 'text-warning' :
+                                  insightType === 'danger' ? 'text-destructive' :
+                                  'text-primary'
+                                }`} />
+                              </div>
+                              <span>{insight.title}</span>
+                            </div>
+                            <Sparkles className="w-4 h-4 text-primary" />
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <p className="text-sm text-foreground leading-relaxed">{insight.description}</p>
+                          {insight.action_items && insight.action_items.length > 0 && (
+                            <div className="space-y-2">
+                              <p className="text-xs font-semibold text-muted-foreground">Ações recomendadas:</p>
+                              <ul className="list-disc list-inside space-y-1">
+                                {insight.action_items.map((action, i) => (
+                                  <li key={i} className="text-xs text-muted-foreground">{action}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Balance Prediction */}
+              {balancePrediction && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2 mb-4">
+                    <Activity className="w-5 h-5 text-primary" />
+                    Previsão de Saldo
+                  </h3>
+                  <Card className="border-l-4 border-l-primary bg-primary/5">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            insight.type === 'success' ? 'bg-success/20' :
-                            insight.type === 'warning' ? 'bg-warning/20' :
-                            insight.type === 'danger' ? 'bg-destructive/20' :
-                            'bg-primary/20'
-                          }`}>
-                            <Icon className={`w-5 h-5 ${
-                              insight.type === 'success' ? 'text-success' :
-                              insight.type === 'warning' ? 'text-warning' :
-                              insight.type === 'danger' ? 'text-destructive' :
-                              'text-primary'
-                            }`} />
-                          </div>
-                          <span>{insight.title}</span>
-                        </div>
-                        <Sparkles className="w-4 h-4 text-primary" />
+                      <CardTitle className="text-base">
+                        Saldo previsto em {balancePrediction.days_ahead} dias
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <p className="text-sm text-foreground leading-relaxed">{insight.description}</p>
-                      <Button variant="outline" size="sm" className="group">
-                        {insight.action}
-                        <ArrowRight className="w-3 h-3 ml-2 group-hover:translate-x-1 transition-transform" />
-                      </Button>
+                      <div className="text-3xl font-bold text-primary">
+                        R$ {balancePrediction.predicted_balance.toLocaleString('pt-BR')}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Confiança:</span>
+                        <Progress value={balancePrediction.confidence * 100} className="h-2 flex-1" />
+                        <span className="text-sm font-semibold text-primary">
+                          {(balancePrediction.confidence * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      {balancePrediction.trend && (
+                        <p className="text-sm text-muted-foreground">
+                          <strong>Tendência:</strong> {balancePrediction.trend}
+                        </p>
+                      )}
+                      {balancePrediction.factors && balancePrediction.factors.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold text-muted-foreground">Fatores considerados:</p>
+                          <ul className="list-disc list-inside space-y-1">
+                            {balancePrediction.factors.map((factor, i) => (
+                              <li key={i} className="text-xs text-muted-foreground">{factor}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
-                );
-              })}
+                </div>
+              )}
 
-              <div className="mt-8 p-6 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-secondary/10 border-2 border-primary/30 backdrop-blur-sm">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/30">
-                    <Brain className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-lg font-bold text-foreground mb-3">Recomendação Principal</h4>
-                    <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                      Com base na análise completa dos seus dados financeiros, recomendamos: <strong className="text-primary">Antecipar R$ 1.200 em recebíveis</strong> e <strong className="text-primary">renegociar contratos com fornecedores</strong> para evitar caixa negativo nos próximos 12 dias e manter a saúde financeira do negócio.
-                    </p>
-                    <Button variant="gradient" size="default" className="group shadow-lg">
-                      Aplicar Recomendações
-                      <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </Button>
+              {/* Anomalies */}
+              {anomalies.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2 mb-4">
+                    <AlertTriangle className="w-5 h-5 text-destructive" />
+                    Anomalias Detectadas
+                  </h3>
+                  <div className="space-y-3">
+                    {anomalies.map((anomaly, index) => (
+                      <Card key={index} className="border-l-4 border-l-destructive bg-destructive/5">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm flex items-center justify-between">
+                            <span>{anomaly.transaction_description}</span>
+                            <span className="text-xs font-normal text-muted-foreground">
+                              {new Date(anomaly.date).toLocaleDateString('pt-BR')}
+                            </span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <p className="text-sm text-foreground">{anomaly.reason}</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">Severidade:</span>
+                            <span className={`text-xs font-semibold ${
+                              anomaly.severity === 'high' ? 'text-destructive' :
+                              anomaly.severity === 'medium' ? 'text-warning' :
+                              'text-success'
+                            }`}>
+                              {anomaly.severity === 'high' ? 'Alta' : anomaly.severity === 'medium' ? 'Média' : 'Baixa'}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* Spending Patterns */}
+              {spendingPatterns.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2 mb-4">
+                    <PieChart className="w-5 h-5 text-primary" />
+                    Padrões de Gastos
+                  </h3>
+                  <div className="space-y-3">
+                    {spendingPatterns.map((pattern, index) => (
+                      <Card key={index} className="border-l-4 border-l-primary bg-primary/5">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm capitalize">{pattern.category}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Média Mensal</span>
+                            <span className="text-sm font-bold">R$ {pattern.average_amount.toLocaleString('pt-BR')}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Tendência</span>
+                            <span className={`text-sm font-semibold flex items-center gap-1 ${
+                              pattern.trend === 'increasing' ? 'text-destructive' :
+                              pattern.trend === 'decreasing' ? 'text-success' :
+                              'text-muted-foreground'
+                            }`}>
+                              {pattern.trend === 'increasing' && <ArrowUpRight className="w-3 h-3" />}
+                              {pattern.trend === 'decreasing' && <TrendingDown className="w-3 h-3" />}
+                              {pattern.trend === 'increasing' ? 'Aumentando' : pattern.trend === 'decreasing' ? 'Diminuindo' : 'Estável'}
+                            </span>
+                          </div>
+                          {pattern.insights && (
+                            <p className="text-xs text-muted-foreground mt-2">{pattern.insights}</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {insights.length === 0 && !balancePrediction && anomalies.length === 0 && spendingPatterns.length === 0 && !aiError && (
+                <Card className="border-l-4 border-l-muted bg-muted/5">
+                  <CardContent className="py-8 text-center">
+                    <Brain className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                    <p className="text-sm text-muted-foreground">
+                      Não há dados suficientes para gerar insights. Adicione mais transações ou conecte um banco.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           ) : null}
         </DialogContent>
