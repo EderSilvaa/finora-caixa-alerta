@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -16,6 +18,16 @@ import { useTransactions } from "@/hooks/useTransactions";
 import { useAutoSync } from "@/hooks/useAutoSync";
 import { useAI } from "@/hooks/useAI";
 import { useEffect } from "react";
+import { ActionPlan, type ActionItem } from "@/components/ActionPlan";
+import { RevenuePrediction } from "@/components/RevenuePrediction";
+import { SmartGoals } from "@/components/SmartGoals";
+import { CreateGoalModal } from "@/components/CreateGoalModal";
+import { ExportReport } from "@/components/ExportReport";
+import { AlertsCenter } from "@/components/AlertsCenter";
+import { useSmartGoals } from "@/hooks/useSmartGoals";
+import { useAIAnalysis } from "@/hooks/useAIAnalysis";
+import { aiService } from "@/services/ai.service";
+import type { ExportData } from "@/services/export.service";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +45,7 @@ const Dashboard = () => {
   // Fetch real data from Supabase
   const { stats, monthlyData, cashFlowProjection, daysUntilZero } = useTransactionStats();
   const { transactions, loading: transactionsLoading, addTransaction } = useTransactions();
+  const { goals, refreshGoals } = useSmartGoals();
 
   // Auto-sync functionality
   const { syncStatus, manualSync, getLastSyncText } = useAutoSync();
@@ -46,7 +59,9 @@ const Dashboard = () => {
     loading: aiLoading,
     error: aiError,
     isConfigured: isAIConfigured,
+    lastAnalysisDate,
     runFullAnalysis,
+    loadLatestAnalysisFromDB,
   } = useAI();
 
   // Show toast when auto-sync starts and completes
@@ -77,8 +92,10 @@ const Dashboard = () => {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showProjectionModal, setShowProjectionModal] = useState(false);
+  const [showCreateGoal, setShowCreateGoal] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiAnalysisComplete, setAiAnalysisComplete] = useState(false);
+  const [actionPlanItems, setActionPlanItems] = useState<ActionItem[]>([]);
 
   // Estados para formulários
   const [expenseAmount, setExpenseAmount] = useState("");
@@ -97,13 +114,6 @@ const Dashboard = () => {
 
   // Recent 5 transactions for display
   const recentTransactions = transactions.slice(0, 5);
-
-  // Metas financeiras (keep as mockdata for now, will be replaced in next phase)
-  const financialGoals = [
-    { id: 1, title: 'Reserva de Emergência', current: 8500, target: 15000, percentage: 57, color: 'primary' },
-    { id: 2, title: 'Expansão do Negócio', current: 12000, target: 30000, percentage: 40, color: 'secondary' },
-    { id: 3, title: 'Quitação de Dívidas', current: 7500, target: 10000, percentage: 75, color: 'success' },
-  ];
 
   const analyzedPeriod = 90;
 
@@ -189,6 +199,12 @@ const Dashboard = () => {
     }
   };
 
+  // Função para abrir modal de análise (sem rodar nova análise)
+  const handleOpenAnalysisModal = () => {
+    setShowAIAnalysis(true);
+    setAiAnalysisComplete(true);
+  };
+
   // Função para análise de IA com GPT-4o
   const handleAIAnalysis = async () => {
     if (!isAIConfigured) {
@@ -242,6 +258,48 @@ const Dashboard = () => {
     }, 2500);
   };
 
+  // Função para gerar plano de ação com IA
+  const handleGenerateActionPlan = async (): Promise<ActionItem[]> => {
+    if (!user?.id) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    if (!isAIConfigured) {
+      toast({
+        title: "API Key do OpenAI necessária",
+        description: "Configure a API key do OpenAI no arquivo .env.local",
+        variant: "destructive"
+      });
+      throw new Error('OpenAI not configured');
+    }
+
+    try {
+      const monthlyBurn = Math.abs(stats.monthlySavings);
+      const actions = await aiService.generateActionPlan(
+        user.id,
+        daysUntilZero,
+        currentBalance,
+        monthlyBurn
+      );
+
+      setActionPlanItems(actions);
+
+      toast({
+        title: "Plano de Ação gerado!",
+        description: `${actions.length} ações recomendadas`,
+      });
+
+      return actions;
+    } catch (error: any) {
+      toast({
+        title: "Erro ao gerar plano",
+        description: error.message || "Não foi possível gerar o plano de ação",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
   // Map AI insight severity to card type
   const getInsightType = (severity: string) => {
     switch (severity) {
@@ -273,6 +331,81 @@ const Dashboard = () => {
       default:
         return Activity;
     }
+  };
+
+  // Preparar dados para exportação
+  const prepareExportData = (): ExportData => {
+    // Formatar transações para exportação
+    const formattedTransactions = transactions.map(t => ({
+      id: t.id,
+      amount: t.amount,
+      description: t.description,
+      type: t.type as 'income' | 'expense',
+      date: t.date,
+    }));
+
+    // Formatar metas para exportação
+    const formattedGoals = goals.map(g => ({
+      title: g.title,
+      progress: g.progress_percentage || 0,
+      target: g.target_amount,
+      current: g.current_amount,
+    }));
+
+    // Formatar insights de IA
+    const formattedInsights = insights.length > 0 ? {
+      summary: insights[0]?.summary || insights[0]?.description || 'Análise financeira realizada com sucesso.',
+      warnings: insights
+        .filter(i => i.severity === 'high' || i.severity === 'medium')
+        .map(i => `${i.title}: ${i.description}`),
+      recommendations: insights
+        .filter(i => i.severity === 'low' || i.category === 'opportunity')
+        .map(i => i.action_items?.join(' | ') || i.description),
+    } : undefined;
+
+    // Formatar análises detalhadas de IA
+    const formattedAIAnalysis = (balancePrediction || anomalies.length > 0 || spendingPatterns.length > 0) ? {
+      balancePrediction: balancePrediction ? {
+        predicted_balance: balancePrediction.predicted_balance,
+        confidence: balancePrediction.confidence,
+        days_ahead: balancePrediction.days_ahead,
+        trend: balancePrediction.trend,
+      } : undefined,
+      anomalies: anomalies.map(a => ({
+        description: a.transaction_description,
+        amount: a.amount,
+        date: a.date,
+        reason: a.reason,
+        severity: a.severity,
+      })),
+      spendingPatterns: spendingPatterns.map(p => ({
+        category: p.category,
+        average_amount: p.average_amount,
+        trend: p.trend,
+        insights: p.insights,
+      })),
+    } : undefined;
+
+    // Calcular período (últimos 30 dias)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+
+    return {
+      currentBalance: currentBalance,
+      totalRevenue: totalRevenue,
+      totalExpenses: totalExpenses,
+      savings: monthlySavings,
+      daysUntilZero: daysUntilZero,
+      periodStart: startDate.toISOString(),
+      periodEnd: endDate.toISOString(),
+      transactions: formattedTransactions,
+      goals: formattedGoals.length > 0 ? formattedGoals : undefined,
+      insights: formattedInsights,
+      aiAnalysis: formattedAIAnalysis,
+      userName: user?.email?.split('@')[0] || 'Usuário',
+      userEmail: user?.email || '',
+    };
   };
 
   return (
@@ -312,6 +445,9 @@ const Dashboard = () => {
                 </div>
               )}
 
+              {/* Export Report Button */}
+              <ExportReport data={prepareExportData()} />
+
               {/* Bank Connection Button */}
               <Button
                 variant="outline"
@@ -322,6 +458,9 @@ const Dashboard = () => {
                 <Building2 className="w-4 h-4" />
                 <span className="hidden md:inline">Conectar Banco</span>
               </Button>
+
+              {/* Alerts Center */}
+              <AlertsCenter />
 
               {/* User Menu */}
               <DropdownMenu>
@@ -469,6 +608,27 @@ const Dashboard = () => {
             </Card>
           </div>
 
+          {/* Action Plan for Critical Cash Flow */}
+          {daysUntilZero < 15 && daysUntilZero > 0 && (
+            <ActionPlan
+              daysUntilZero={daysUntilZero}
+              currentBalance={currentBalance}
+              monthlyBurn={Math.abs(stats.monthlySavings)}
+              onGenerateAIPlan={handleGenerateActionPlan}
+              initialActions={actionPlanItems}
+            />
+          )}
+
+          {/* Revenue Prediction - Recurring Revenue & Alerts */}
+          <RevenuePrediction
+            onSendReminder={(clientName, amount) => {
+              toast({
+                title: "Lembrete de cobrança",
+                description: `Lembrete para ${clientName} (R$ ${amount.toLocaleString('pt-BR')}) será enviado`,
+              });
+            }}
+          />
+
           {/* Seção de Gráficos Premium */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Gráfico de Projeção - Design Premium */}
@@ -589,6 +749,30 @@ const Dashboard = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
+                {/* Last Analysis Date & Refresh */}
+                {lastAnalysisDate && (
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-background/60 backdrop-blur-sm border border-primary/20">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                      <span className="text-xs text-muted-foreground">
+                        Analisado {formatDistanceToNow(new Date(lastAnalysisDate), {
+                          addSuffix: true,
+                          locale: ptBR,
+                        })}
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 hover:bg-primary/10"
+                      disabled={aiLoading}
+                      onClick={handleAIAnalysis}
+                    >
+                      <RefreshCw className={`w-3 h-3 ${aiLoading ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   {/* Show AI insights preview if available */}
                   {isAIConfigured && insights.length > 0 ? (
@@ -646,16 +830,31 @@ const Dashboard = () => {
                   )}
                 </div>
 
-                <Button
-                  variant="gradient"
-                  size="sm"
-                  className="w-full mt-4 shadow-lg hover:shadow-xl transition-all"
-                  onClick={handleAIAnalysis}
-                >
-                  <Brain className="w-4 h-4 mr-2" />
-                  Ver Análise Completa
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
+                {/* Botão inteligente: se já tem dados, apenas abre. Se não tem, gera */}
+                {insights.length > 0 || balancePrediction || anomalies.length > 0 || spendingPatterns.length > 0 ? (
+                  <Button
+                    variant="gradient"
+                    size="sm"
+                    className="w-full mt-4 shadow-lg hover:shadow-xl transition-all"
+                    onClick={handleOpenAnalysisModal}
+                  >
+                    <Brain className="w-4 h-4 mr-2" />
+                    Ver Análise Completa
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="gradient"
+                    size="sm"
+                    className="w-full mt-4 shadow-lg hover:shadow-xl transition-all"
+                    onClick={handleAIAnalysis}
+                    disabled={aiLoading}
+                  >
+                    <Brain className="w-4 h-4 mr-2" />
+                    {aiLoading ? 'Analisando...' : 'Gerar Análise'}
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -823,47 +1022,10 @@ const Dashboard = () => {
 
           {/* Metas Financeiras + Ações Rápidas - Design Premium */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Metas Financeiras - Design Premium */}
-            <Card className="border-0 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl shadow-2xl">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                    <Target className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-bold text-foreground">Metas Financeiras</CardTitle>
-                    <CardDescription className="text-xs">Progresso dos seus objetivos</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                {financialGoals.map((goal) => (
-                  <div key={goal.id} className="p-4 rounded-xl bg-background/60 backdrop-blur-sm border border-border/50 hover:border-primary/30 transition-colors space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-foreground">{goal.title}</span>
-                      <span className="text-sm font-bold text-primary">
-                        {goal.percentage}%
-                      </span>
-                    </div>
-                    <div className="relative">
-                      <Progress value={goal.percentage} className="h-3" />
-                      <div
-                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary/20 to-transparent rounded-full transition-all"
-                        style={{ width: `${goal.percentage}%` }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-muted-foreground">
-                        R$ {goal.current.toLocaleString('pt-BR')}
-                      </span>
-                      <span className="text-muted-foreground">
-                        Meta: <span className="font-semibold text-foreground">R$ {goal.target.toLocaleString('pt-BR')}</span>
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            {/* Smart Goals - IA-powered financial goals */}
+            <SmartGoals
+              onCreateGoal={() => setShowCreateGoal(true)}
+            />
 
             {/* Ações Rápidas - Design Premium */}
             <Card className="border-0 bg-gradient-to-br from-primary/5 via-card/95 to-secondary/5 backdrop-blur-xl shadow-2xl">
@@ -924,13 +1086,16 @@ const Dashboard = () => {
                 <Button
                   variant="gradient"
                   className="w-full justify-between h-14 text-base shadow-lg hover:shadow-xl transition-all group"
-                  onClick={handleAIAnalysis}
+                  onClick={insights.length > 0 || balancePrediction || anomalies.length > 0 ? handleOpenAnalysisModal : handleAIAnalysis}
+                  disabled={aiLoading}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
                       <Brain className="w-5 h-5 text-white" />
                     </div>
-                    <span className="font-semibold">Análise Detalhada IA</span>
+                    <span className="font-semibold">
+                      {insights.length > 0 || balancePrediction || anomalies.length > 0 ? 'Ver Análise IA' : 'Análise Detalhada IA'}
+                    </span>
                   </div>
                   <ArrowRight className="w-5 h-5" />
                 </Button>
@@ -953,16 +1118,31 @@ const Dashboard = () => {
       <Dialog open={showAIAnalysis} onOpenChange={setShowAIAnalysis}>
         <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto border-0 bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-2xl">
-              <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
-                <Brain className="w-6 h-6 text-white" />
+            <DialogTitle className="flex items-center justify-between text-2xl">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
+                  <Brain className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <div>Análise Detalhada de IA</div>
+                  <DialogDescription className="text-sm mt-1">
+                    Insights personalizados baseados em machine learning e análise preditiva
+                  </DialogDescription>
+                </div>
               </div>
-              <div>
-                <div>Análise Detalhada de IA</div>
-                <DialogDescription className="text-sm mt-1">
-                  Insights personalizados baseados em machine learning e análise preditiva
-                </DialogDescription>
-              </div>
+              {/* Botão para atualizar análise */}
+              {!isAnalyzing && aiAnalysisComplete && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAIAnalysis}
+                  className="flex items-center gap-2"
+                  disabled={aiLoading}
+                >
+                  <RefreshCw className={`w-4 h-4 ${aiLoading ? 'animate-spin' : ''}`} />
+                  Atualizar
+                </Button>
+              )}
             </DialogTitle>
           </DialogHeader>
 
@@ -1302,6 +1482,24 @@ const Dashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Criar Meta - Design Premium com IA */}
+      <CreateGoalModal
+        open={showCreateGoal}
+        onClose={() => setShowCreateGoal(false)}
+        onSuccess={async () => {
+          setShowCreateGoal(false);
+          // Refresh goals list
+          await refreshGoals();
+          toast({
+            title: "Meta criada com sucesso!",
+            description: "Sua meta foi salva e já está sendo monitorada",
+          });
+        }}
+        currentBalance={currentBalance}
+        monthlyIncome={totalRevenue}
+        monthlyExpenses={totalExpenses}
+      />
     </div>
   );
 };
