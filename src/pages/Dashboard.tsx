@@ -447,9 +447,6 @@ const Dashboard = () => {
                 </div>
               )}
 
-              {/* Export Report Button */}
-              <ExportReport data={prepareExportData()} />
-
               {/* Bank Connection Button */}
               <Button
                 variant="outline"
@@ -770,15 +767,31 @@ const Dashboard = () => {
                         })}
                       </span>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 hover:bg-primary/10"
-                      disabled={aiLoading}
-                      onClick={handleAIAnalysis}
-                    >
-                      <RefreshCw className={`w-3 h-3 ${aiLoading ? 'animate-spin' : ''}`} />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <ExportReport
+                        data={prepareExportData()}
+                        trigger={
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 hover:bg-primary/10"
+                            title="Exportar Relatório"
+                          >
+                            <Download className="w-3 h-3" />
+                          </Button>
+                        }
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 hover:bg-primary/10"
+                        disabled={aiLoading}
+                        onClick={handleAIAnalysis}
+                        title="Atualizar Análise"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${aiLoading ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                   </div>
                 )}
 
