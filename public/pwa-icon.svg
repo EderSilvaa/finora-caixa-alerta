@@ -1,0 +1,38 @@
+<svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" rx="110" fill="url(#bgGradient)"/>
+
+  <!-- Circular border (blue gradient) -->
+  <circle
+    cx="256"
+    cy="256"
+    r="180"
+    stroke="url(#blueGradient)"
+    stroke-width="28"
+    stroke-linecap="round"
+    stroke-dasharray="850 170"
+    stroke-dashoffset="100"
+    fill="none"
+  />
+
+  <!-- Bar chart bars (purple) -->
+  <rect x="170" y="290" width="48" height="105" rx="8" fill="url(#purpleGradient)" />
+  <rect x="232" y="250" width="48" height="145" rx="8" fill="url(#purpleGradient)" />
+  <rect x="294" y="200" width="48" height="195" rx="8" fill="url(#purpleGradient)" />
+
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#A78BFA" />
+      <stop offset="100%" stop-color="#8B5CF6" />
+    </linearGradient>
+  </defs>
+</svg>

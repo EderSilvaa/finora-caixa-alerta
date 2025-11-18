@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Brain, TrendingDown, Calendar, AlertTriangle, TrendingUp, ArrowUpRight, ArrowDownRight, DollarSign, Target, Zap, Download, Upload, RefreshCw, Sparkles, ArrowRight, Activity, PieChart, LogOut, User, Settings, Building2, Loader2 } from "lucide-react";
+import { Brain, TrendingDown, Calendar, AlertTriangle, TrendingUp, ArrowUpRight, ArrowDownRight, DollarSign, Target, Zap, Download, Upload, RefreshCw, Sparkles, ArrowRight, Activity, PieChart, LogOut, User, Settings, Building2, Loader2, Bell } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import Logo from "@/components/Logo";
 import { Progress } from "@/components/ui/progress";
@@ -24,6 +24,7 @@ import { SmartGoals } from "@/components/SmartGoals";
 import { CreateGoalModal } from "@/components/CreateGoalModal";
 import { ExportReport } from "@/components/ExportReport";
 import { AlertsCenter } from "@/components/AlertsCenter";
+import { NotificationSettings } from "@/components/NotificationSettings";
 import { useSmartGoals } from "@/hooks/useSmartGoals";
 import { useAIAnalysis } from "@/hooks/useAIAnalysis";
 import { aiService } from "@/services/ai.service";
@@ -93,6 +94,7 @@ const Dashboard = () => {
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showProjectionModal, setShowProjectionModal] = useState(false);
   const [showCreateGoal, setShowCreateGoal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiAnalysisComplete, setAiAnalysisComplete] = useState(false);
   const [actionPlanItems, setActionPlanItems] = useState<ActionItem[]>([]);
@@ -482,6 +484,13 @@ const Dashboard = () => {
                   <DropdownMenuItem className="flex items-center gap-2">
                     <Settings className="w-4 h-4" />
                     <span>Configurações</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setShowNotifications(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Bell className="w-4 h-4" />
+                    <span>Notificações</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -1500,6 +1509,22 @@ const Dashboard = () => {
         monthlyIncome={totalRevenue}
         monthlyExpenses={totalExpenses}
       />
+
+      {/* Modal de Configurações de Notificações */}
+      <Dialog open={showNotifications} onOpenChange={setShowNotifications}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-violet-600" />
+              Configurações de Notificações
+            </DialogTitle>
+            <DialogDescription>
+              Configure como e quando você deseja receber notificações sobre seu fluxo de caixa
+            </DialogDescription>
+          </DialogHeader>
+          <NotificationSettings />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
