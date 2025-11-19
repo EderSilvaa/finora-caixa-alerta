@@ -424,22 +424,23 @@ const Dashboard = () => {
 
       {/* Header com Logout */}
       <header className="relative z-10 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto px-3 md:px-4 py-4 md:py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <Logo size="md" />
-              <h1 className="text-2xl font-bold text-foreground">Finora</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-foreground">Finora</h1>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 border border-border/50">
+            <div className="flex items-center gap-2 md:gap-4">
+              {/* Period indicator - Hidden on mobile */}
+              <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 border border-border/50">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Últimos {analyzedPeriod} dias</span>
               </div>
 
-              {/* Last Sync Indicator */}
+              {/* Last Sync Indicator - Icon only on mobile */}
               {syncStatus.lastSyncAt && (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/30">
+                <div className="flex items-center gap-2 px-2 md:px-4 py-2 rounded-lg bg-primary/10 border border-primary/30">
                   <RefreshCw className={`w-4 h-4 text-primary ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
                   <span className="text-sm text-primary hidden md:inline">
                     Sync: {getLastSyncText()}
@@ -447,7 +448,7 @@ const Dashboard = () => {
                 </div>
               )}
 
-              {/* Bank Connection Button */}
+              {/* Bank Connection Button - Icon only on mobile */}
               <Button
                 variant="outline"
                 size="sm"
@@ -505,11 +506,11 @@ const Dashboard = () => {
       </header>
 
       {/* Main Content - Design Premium Aprimorado */}
-      <main className="relative z-10 container mx-auto px-4 py-8">
-        <div className="max-w-7xl mx-auto space-y-8">
+      <main className="relative z-10 container mx-auto px-3 md:px-4 py-6 md:py-8">
+        <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
 
           {/* KPIs Premium - Grid com glassmorphism e gradientes */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
             {/* Saldo Atual - Design Premium */}
             <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-xl shadow-2xl hover:shadow-primary/20 transition-all duration-300 hover:-translate-y-1 group">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -517,12 +518,12 @@ const Dashboard = () => {
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Saldo Atual</CardTitle>
-                    <div className="text-3xl font-bold text-foreground">
+                    <div className="text-2xl md:text-3xl font-bold text-foreground">
                       R$ {currentBalance.toLocaleString('pt-BR')}
                     </div>
                   </div>
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                    <DollarSign className="w-6 h-6 text-primary" />
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                    <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-primary" />
                   </div>
                 </div>
               </CardHeader>
@@ -535,7 +536,7 @@ const Dashboard = () => {
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Receita Mensal</CardTitle>
-                    <div className="text-3xl font-bold text-success">
+                    <div className="text-2xl md:text-3xl font-bold text-success">
                       R$ {totalRevenue.toLocaleString('pt-BR')}
                     </div>
                     <div className="flex items-center gap-1 text-xs text-success font-medium">
@@ -543,8 +544,8 @@ const Dashboard = () => {
                       +{monthlyGrowth}% vs mês anterior
                     </div>
                   </div>
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-success/20 to-success/10 flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 text-success" />
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-success/20 to-success/10 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-success" />
                   </div>
                 </div>
               </CardHeader>
@@ -557,15 +558,15 @@ const Dashboard = () => {
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Despesas Mensais</CardTitle>
-                    <div className="text-3xl font-bold text-warning">
+                    <div className="text-2xl md:text-3xl font-bold text-warning">
                       R$ {totalExpenses.toLocaleString('pt-BR')}
                     </div>
                     <div className="text-xs text-muted-foreground font-medium">
                       {((totalExpenses/totalRevenue)*100).toFixed(0)}% da receita
                     </div>
                   </div>
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-warning/20 to-warning/10 flex items-center justify-center">
-                    <TrendingDown className="w-6 h-6 text-warning" />
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-warning/20 to-warning/10 flex items-center justify-center">
+                    <TrendingDown className="w-5 h-5 md:w-6 md:h-6 text-warning" />
                   </div>
                 </div>
               </CardHeader>
@@ -578,15 +579,15 @@ const Dashboard = () => {
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Economia</CardTitle>
-                    <div className="text-3xl font-bold text-primary">
+                    <div className="text-2xl md:text-3xl font-bold text-primary">
                       R$ {monthlySavings.toLocaleString('pt-BR')}
                     </div>
                     <div className="text-xs text-muted-foreground font-medium">
                       Este mês
                     </div>
                   </div>
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                    <Target className="w-6 h-6 text-primary" />
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                    <Target className="w-5 h-5 md:w-6 md:h-6 text-primary" />
                   </div>
                 </div>
               </CardHeader>
@@ -599,15 +600,15 @@ const Dashboard = () => {
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Alerta de Caixa</CardTitle>
-                    <div className="text-3xl font-bold text-destructive">
+                    <div className="text-2xl md:text-3xl font-bold text-destructive">
                       {daysUntilZero} dias
                     </div>
                     <div className="text-xs text-destructive font-medium">
                       Até zerar
                     </div>
                   </div>
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-destructive/20 to-destructive/10 flex items-center justify-center animate-pulse">
-                    <AlertTriangle className="w-6 h-6 text-destructive" />
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-destructive/20 to-destructive/10 flex items-center justify-center animate-pulse">
+                    <AlertTriangle className="w-5 h-5 md:w-6 md:h-6 text-destructive" />
                   </div>
                 </div>
               </CardHeader>
@@ -636,24 +637,24 @@ const Dashboard = () => {
           />
 
           {/* Seção de Gráficos Premium */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
             {/* Gráfico de Projeção - Design Premium */}
             <Card className="lg:col-span-2 border-0 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl shadow-2xl">
-              <CardHeader className="pb-4 space-y-2">
+              <CardHeader className="pb-3 md:pb-4 space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                      <Activity className="w-5 h-5 text-primary" />
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                      <Activity className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg font-bold text-foreground">Projeção de Caixa</CardTitle>
+                      <CardTitle className="text-base md:text-lg font-bold text-foreground">Projeção de Caixa</CardTitle>
                       <CardDescription className="text-xs">Análise preditiva dos próximos 102 dias</CardDescription>
                     </div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="h-[320px] w-full">
+                <div className="h-[250px] md:h-[320px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                       data={cashFlowData}
@@ -743,13 +744,13 @@ const Dashboard = () => {
 
             {/* Insights IA - Design Premium */}
             <Card className="border-0 bg-gradient-to-br from-primary/5 via-card/95 to-secondary/5 backdrop-blur-xl shadow-2xl">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg shadow-primary/30">
-                    <Brain className="w-5 h-5 text-white" />
+              <CardHeader className="pb-3 md:pb-4">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg shadow-primary/30">
+                    <Brain className="w-4 h-4 md:w-5 md:h-5 text-white" />
                   </div>
                   <div>
-                    <CardTitle className="text-base font-bold text-foreground">Insights IA</CardTitle>
+                    <CardTitle className="text-sm md:text-base font-bold text-foreground">Insights IA</CardTitle>
                     <CardDescription className="text-xs">Análise em tempo real</CardDescription>
                   </div>
                 </div>
@@ -882,24 +883,24 @@ const Dashboard = () => {
           </div>
 
           {/* Receitas vs Despesas + Transações - Design Premium */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
             {/* Gráfico de Barras - Design Premium */}
             <Card className="lg:col-span-2 border-0 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl shadow-2xl">
-              <CardHeader className="pb-4">
+              <CardHeader className="pb-3 md:pb-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-success/20 to-warning/20 flex items-center justify-center">
-                      <PieChart className="w-5 h-5 text-primary" />
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-success/20 to-warning/20 flex items-center justify-center">
+                      <PieChart className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg font-bold text-foreground">Receitas vs Despesas</CardTitle>
+                      <CardTitle className="text-base md:text-lg font-bold text-foreground">Receitas vs Despesas</CardTitle>
                       <CardDescription className="text-xs">Comparativo dos últimos 6 meses</CardDescription>
                     </div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="h-[300px] w-full">
+                <div className="h-[250px] md:h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={revenueExpensesData}>
                       <defs>
@@ -948,14 +949,14 @@ const Dashboard = () => {
 
             {/* Transações Recentes - Design Premium */}
             <Card className="border-0 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl shadow-2xl">
-              <CardHeader className="pb-4">
+              <CardHeader className="pb-3 md:pb-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                      <Activity className="w-5 h-5 text-primary" />
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                      <Activity className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-base font-bold text-foreground">Transações</CardTitle>
+                      <CardTitle className="text-sm md:text-base font-bold text-foreground">Transações</CardTitle>
                       <CardDescription className="text-xs">Atividade recente</CardDescription>
                     </div>
                   </div>
@@ -1043,7 +1044,7 @@ const Dashboard = () => {
           </div>
 
           {/* Metas Financeiras + Ações Rápidas - Design Premium */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Smart Goals - IA-powered financial goals */}
             <SmartGoals
               onCreateGoal={() => setShowCreateGoal(true)}
@@ -1051,75 +1052,75 @@ const Dashboard = () => {
 
             {/* Ações Rápidas - Design Premium */}
             <Card className="border-0 bg-gradient-to-br from-primary/5 via-card/95 to-secondary/5 backdrop-blur-xl shadow-2xl">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg shadow-primary/30">
-                    <Zap className="w-5 h-5 text-white" />
+              <CardHeader className="pb-3 md:pb-4">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg shadow-primary/30">
+                    <Zap className="w-4 h-4 md:w-5 md:h-5 text-white" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg font-bold text-foreground">Ações Rápidas</CardTitle>
+                    <CardTitle className="text-base md:text-lg font-bold text-foreground">Ações Rápidas</CardTitle>
                     <CardDescription className="text-xs">Gerencie seu fluxo de caixa</CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-2 md:space-y-3">
                 <Button
                   variant="outline"
-                  className="w-full justify-between h-14 text-base border-2 hover:border-destructive/50 hover:bg-destructive/5 transition-all group"
+                  className="w-full justify-between h-12 md:h-14 text-sm md:text-base border-2 hover:border-destructive/50 hover:bg-destructive/5 transition-all group"
                   onClick={() => setShowExpenseModal(true)}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center group-hover:bg-destructive/20 transition-colors">
-                      <Download className="w-5 h-5 text-destructive" />
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-destructive/10 flex items-center justify-center group-hover:bg-destructive/20 transition-colors">
+                      <Download className="w-4 h-4 md:w-5 md:h-5 text-destructive" />
                     </div>
                     <span className="font-semibold">Registrar Despesa</span>
                   </div>
-                  <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </Button>
 
                 <Button
                   variant="outline"
-                  className="w-full justify-between h-14 text-base border-2 hover:border-success/50 hover:bg-success/5 transition-all group"
+                  className="w-full justify-between h-12 md:h-14 text-sm md:text-base border-2 hover:border-success/50 hover:bg-success/5 transition-all group"
                   onClick={() => setShowIncomeModal(true)}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-success/10 flex items-center justify-center group-hover:bg-success/20 transition-colors">
-                      <Upload className="w-5 h-5 text-success" />
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-success/10 flex items-center justify-center group-hover:bg-success/20 transition-colors">
+                      <Upload className="w-4 h-4 md:w-5 md:h-5 text-success" />
                     </div>
                     <span className="font-semibold">Registrar Receita</span>
                   </div>
-                  <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </Button>
 
                 <Button
                   variant="outline"
-                  className="w-full justify-between h-14 text-base border-2 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                  className="w-full justify-between h-12 md:h-14 text-sm md:text-base border-2 hover:border-primary/50 hover:bg-primary/5 transition-all group"
                   onClick={handleNewProjection}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <Activity className="w-5 h-5 text-primary" />
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <Activity className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                     </div>
                     <span className="font-semibold">Nova Projeção</span>
                   </div>
-                  <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </Button>
 
                 <Button
                   variant="gradient"
-                  className="w-full justify-between h-14 text-base shadow-lg hover:shadow-xl transition-all group"
+                  className="w-full justify-between h-12 md:h-14 text-sm md:text-base shadow-lg hover:shadow-xl transition-all group"
                   onClick={insights.length > 0 || balancePrediction || anomalies.length > 0 ? handleOpenAnalysisModal : handleAIAnalysis}
                   disabled={aiLoading}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                      <Brain className="w-5 h-5 text-white" />
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-lg bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                      <Brain className="w-4 h-4 md:w-5 md:h-5 text-white" />
                     </div>
                     <span className="font-semibold">
                       {insights.length > 0 || balancePrediction || anomalies.length > 0 ? 'Ver Análise IA' : 'Análise Detalhada IA'}
                     </span>
                   </div>
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
                 </Button>
               </CardContent>
             </Card>
@@ -1128,9 +1129,9 @@ const Dashboard = () => {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-border/40 py-8 mt-20">
-        <div className="container mx-auto px-4">
-          <p className="text-center text-sm text-muted-foreground">
+      <footer className="relative z-10 border-t border-border/40 py-6 md:py-8 mt-12 md:mt-20">
+        <div className="container mx-auto px-3 md:px-4">
+          <p className="text-center text-xs md:text-sm text-muted-foreground">
             IA Finora — seu copiloto financeiro.
           </p>
         </div>
@@ -1138,7 +1139,7 @@ const Dashboard = () => {
 
       {/* Modal de Análise de IA - Design Premium */}
       <Dialog open={showAIAnalysis} onOpenChange={setShowAIAnalysis}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto border-0 bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl shadow-2xl">
+        <DialogContent className="max-w-[95vw] md:max-w-4xl max-h-[90vh] md:max-h-[85vh] overflow-y-auto border-0 bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between text-2xl">
               <div className="flex items-center gap-3">
@@ -1395,7 +1396,7 @@ const Dashboard = () => {
 
       {/* Modal de Registrar Despesa - Design Premium */}
       <Dialog open={showExpenseModal} onOpenChange={setShowExpenseModal}>
-        <DialogContent className="border-0 bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl">
+        <DialogContent className="max-w-[95vw] md:max-w-md border-0 bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-xl">
               <div className="w-10 h-10 rounded-xl bg-destructive/20 flex items-center justify-center">
@@ -1439,7 +1440,7 @@ const Dashboard = () => {
 
       {/* Modal de Registrar Receita - Design Premium */}
       <Dialog open={showIncomeModal} onOpenChange={setShowIncomeModal}>
-        <DialogContent className="border-0 bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl">
+        <DialogContent className="max-w-[95vw] md:max-w-md border-0 bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-xl">
               <div className="w-10 h-10 rounded-xl bg-success/20 flex items-center justify-center">
@@ -1483,7 +1484,7 @@ const Dashboard = () => {
 
       {/* Modal de Nova Projeção - Design Premium */}
       <Dialog open={showProjectionModal} onOpenChange={setShowProjectionModal}>
-        <DialogContent className="border-0 bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl">
+        <DialogContent className="max-w-[95vw] md:max-w-md border-0 bg-gradient-to-br from-card/98 to-card/95 backdrop-blur-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-xl">
               <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
@@ -1525,7 +1526,7 @@ const Dashboard = () => {
 
       {/* Modal de Configurações de Notificações */}
       <Dialog open={showNotifications} onOpenChange={setShowNotifications}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] md:max-w-2xl max-h-[90vh] md:max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Bell className="h-5 w-5 text-violet-600" />

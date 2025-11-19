@@ -19,11 +19,16 @@ declare global {
 
 interface BankConnection {
   id: string
+  user_id: string
+  pluggy_item_id: string
+  pluggy_connector_id: string
   connector_name: string
   connector_image_url: string | null
   status: string
   last_synced_at: string | null
   created_at: string
+  consent_given_at?: string | null
+  consent_ip_address?: string | null
 }
 
 export function ConnectBank() {
@@ -58,30 +63,47 @@ export function ConnectBank() {
 
   // Fetch user's bank connections
   useEffect(() => {
+    console.log('[ConnectBank] useEffect triggered, user:', user?.id)
     if (user?.id) {
+      console.log('[ConnectBank] Calling fetchConnections...')
       fetchConnections()
+    } else {
+      console.log('[ConnectBank] No user ID, setting loadingConnections to false')
+      setLoadingConnections(false)
     }
   }, [user])
 
   const fetchConnections = async () => {
     try {
       setLoadingConnections(true)
+      console.log('[ConnectBank] Fetching connections for user:', user?.id)
+
       const { data, error } = await supabase
         .from('bank_connections')
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      console.log('[ConnectBank] Fetch result:', { data, error })
+
+      if (error) {
+        console.error('[ConnectBank] Error fetching connections:', error)
+        throw error
+      }
+
       setConnections(data || [])
+      console.log('[ConnectBank] Loaded', data?.length || 0, 'connections')
     } catch (error: any) {
-      console.error('Error fetching bank connections:', error)
+      console.error('[ConnectBank] Exception:', error)
       toast({
         title: 'Erro ao carregar conexões',
         description: error.message,
         variant: 'destructive',
       })
+      // Set empty array on error to prevent infinite loading
+      setConnections([])
     } finally {
+      console.log('[ConnectBank] Setting loadingConnections to false')
       setLoadingConnections(false)
     }
   }
