@@ -44,6 +44,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const { user, logout } = useAuth();
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [projectionDays, setProjectionDays] = useState<30 | 60 | 120>(30);
 
   // Fetch real data from Supabase
   const { stats, monthlyData, cashFlowProjection, daysUntilZero } = useTransactionStats();
@@ -153,7 +154,8 @@ const Dashboard = () => {
   const totalExpenses = stats.totalExpenses;
   const monthlyGrowth = stats.monthlyGrowth;
   const monthlySavings = stats.monthlySavings;
-  const cashFlowData = cashFlowProjection;
+  // Filter cash flow data based on selected projection period
+  const cashFlowData = cashFlowProjection.filter(item => item.day <= projectionDays);
   const revenueExpensesData = monthlyData;
 
   // Recent 5 transactions for display
@@ -693,7 +695,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Gráfico de Projeção - Design Premium */}
             <Card className="lg:col-span-2 border-0 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl shadow-2xl">
-              <CardHeader className="pb-4 space-y-2">
+              <CardHeader className="pb-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
@@ -701,9 +703,36 @@ const Dashboard = () => {
                     </div>
                     <div>
                       <CardTitle className="text-lg font-bold text-foreground">Projeção de Caixa</CardTitle>
-                      <CardDescription className="text-xs">Análise preditiva dos próximos 102 dias</CardDescription>
+                      <CardDescription className="text-xs">Análise preditiva de {projectionDays} dias</CardDescription>
                     </div>
                   </div>
+                </div>
+                {/* Period Selection Buttons */}
+                <div className="flex gap-2">
+                  <Button
+                    variant={projectionDays === 30 ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setProjectionDays(30)}
+                    className="flex-1 text-xs"
+                  >
+                    30 dias
+                  </Button>
+                  <Button
+                    variant={projectionDays === 60 ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setProjectionDays(60)}
+                    className="flex-1 text-xs"
+                  >
+                    60 dias
+                  </Button>
+                  <Button
+                    variant={projectionDays === 120 ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setProjectionDays(120)}
+                    className="flex-1 text-xs"
+                  >
+                    120 dias
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
@@ -736,14 +765,19 @@ const Dashboard = () => {
                         tickLine={false}
                         axisLine={{ stroke: 'hsl(var(--border))', opacity: 0.3 }}
                         label={{ value: 'Dias', position: 'insideBottom', offset: -10, fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                        interval={projectionDays === 30 ? 4 : projectionDays === 60 ? 9 : 14}
                       />
                       <YAxis
                         stroke="hsl(var(--muted-foreground))"
                         fontSize={11}
                         tickLine={false}
                         axisLine={{ stroke: 'hsl(var(--border))', opacity: 0.3 }}
-                        label={{ value: 'R$', angle: -90, position: 'insideLeft', fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                        tickFormatter={(value) => `R$ ${value}`}
+                        label={{ value: 'Saldo (R$)', angle: -90, position: 'insideLeft', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                        tickFormatter={(value) => {
+                          if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+                          if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+                          return value.toString();
+                        }}
                       />
                       <Tooltip
                         contentStyle={{
@@ -768,9 +802,9 @@ const Dashboard = () => {
                         type="monotone"
                         dataKey="balance"
                         stroke="url(#lineGradient)"
-                        strokeWidth={3}
-                        dot={{ fill: 'hsl(var(--primary))', r: 5, strokeWidth: 2, stroke: 'hsl(var(--background))' }}
-                        activeDot={{ r: 8, fill: 'hsl(var(--primary))', stroke: 'hsl(var(--background))', strokeWidth: 3 }}
+                        strokeWidth={2.5}
+                        dot={false}
+                        activeDot={{ r: 7, fill: 'hsl(var(--primary))', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>

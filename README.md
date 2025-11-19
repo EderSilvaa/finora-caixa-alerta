@@ -18,13 +18,18 @@
 
 ### Principais Funcionalidades
 
-- **Previsão de Fluxo de Caixa**: Projeções precisas de até 102 dias baseadas em histórico e padrões
-- **Alertas Inteligentes**: Notificações automáticas quando o caixa estiver próximo de zerar
-- **Análise com IA**: Insights personalizados sobre padrões de gastos, oportunidades de economia e riscos
-- **Dashboard Interativo**: Visualização em tempo real de KPIs financeiros essenciais
-- **Gestão de Transações**: Registro e categorização de receitas e despesas
-- **Metas Financeiras**: Acompanhamento visual do progresso de objetivos financeiros
-- **Simulador de Cenários**: Teste diferentes cenários de receitas e despesas
+- **🤖 Previsão com Machine Learning**: Projeções avançadas usando Regressão Linear, EMA, Detecção de Padrões Recorrentes e Análise de Sazonalidade
+- **📊 Períodos Personalizáveis**: Escolha entre projeções de 30, 60 ou 120 dias
+- **🔔 Alertas Inteligentes**: Sistema completo de notificações push (PWA) para eventos financeiros críticos
+- **🏦 Open Finance Brasil**: Integração com Pluggy para sincronização automática de transações bancárias
+- **👤 Perfil de Usuário**: Sistema completo com upload de avatar e informações pessoais
+- **📱 PWA Otimizado**: Performance mobile otimizada com cache inteligente e Service Worker
+- **📄 Exportação PDF**: Relatórios completos com análises de IA, gráficos e recomendações
+- **💡 Análise com IA Persistente**: Insights salvos no banco de dados, reutilizáveis e históricos
+- **🎯 Metas Financeiras Inteligentes**: Criação e acompanhamento de objetivos com sugestões da IA
+- **⚡ Dashboard Premium**: Visualização em tempo real de KPIs com gráficos interativos
+- **🔄 Sincronização Automática**: Auto-sync de transações bancárias a cada 6 horas
+- **🎨 Design Responsivo**: Interface otimizada para desktop e mobile com gradientes preservados
 
 ---
 
@@ -52,21 +57,34 @@ Este projeto foi construído com tecnologias modernas e robustas:
 - **React Router DOM** - Navegação e rotas
 - **TanStack Query** - Gerenciamento de estado assíncrono
 
+### Backend & Database
+- **Supabase** - Backend as a Service (PostgreSQL + Auth + Storage + Realtime)
+- **Supabase Auth** - Autenticação segura de usuários
+- **Supabase Storage** - Armazenamento de avatares e arquivos
+- **Row Level Security (RLS)** - Políticas de segurança em nível de linha
+
+### Integrações
+- **Pluggy** - Open Finance Brasil para conexão bancária
+- **OpenAI API** - Análise inteligente com GPT-4
+- **Workbox** - Service Worker e cache para PWA
+
 ### UI/UX
 - **Tailwind CSS** - Framework CSS utility-first
 - **shadcn/ui** - Componentes acessíveis e customizáveis
 - **Radix UI** - Primitivos de UI headless
 - **Lucide React** - Ícones modernos
 - **Recharts** - Gráficos e visualizações de dados
+- **jsPDF** - Geração de relatórios PDF
 
 ### Formulários e Validação
 - **React Hook Form** - Gerenciamento de formulários performático
 - **Zod** - Validação de schemas TypeScript-first
 
-### Estilização e Animações
-- **Tailwind Merge & CVA** - Gerenciamento de classes CSS
-- **Tailwind Animate** - Animações fluidas
-- **Next Themes** - Suporte a temas dark/light
+### Machine Learning & Análise
+- **Regressão Linear** - Análise de tendências históricas
+- **EMA (Exponential Moving Average)** - Ponderação de dados recentes
+- **Detecção de Padrões** - Identificação de transações recorrentes
+- **Análise de Sazonalidade** - Identificação de padrões mensais
 
 ---
 
