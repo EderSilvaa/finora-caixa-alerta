@@ -107,3 +107,27 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Mobile Performance Optimizations */
+@media (max-width: 767px) {
+  /* Disable heavy effects on mobile for better performance */
+  .backdrop-blur-xl {
+    backdrop-filter: none;
+    background-color: hsl(var(--card));
+  }
+
+  /* Reduce shadows on mobile */
+  .shadow-2xl {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  }
+
+  /* Disable hover animations on mobile */
+  .hover\:-translate-y-1:hover {
+    transform: none;
+  }
+
+  /* Simplify gradients on mobile */
+  .bg-gradient-to-br {
+    background: hsl(var(--card));
+  }
+}
