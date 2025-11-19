@@ -31,6 +31,57 @@ interface TransactionData {
   description?: string
 }
 
+// localStorage cache keys
+const CACHE_KEYS = {
+  STATS: 'finora_stats_cache',
+  MONTHLY_DATA: 'finora_monthly_data_cache',
+  PROJECTION: 'finora_projection_cache',
+  TIMESTAMP: 'finora_cache_timestamp',
+}
+
+// Cache duration: 5 minutes
+const CACHE_DURATION = 5 * 60 * 1000
+
+// Save data to localStorage cache
+const saveToCache = (key: string, data: any) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(data))
+    localStorage.setItem(CACHE_KEYS.TIMESTAMP, Date.now().toString())
+  } catch (error) {
+    console.error('Error saving to cache:', error)
+  }
+}
+
+// Load data from localStorage cache
+const loadFromCache = (key: string) => {
+  try {
+    const cached = localStorage.getItem(key)
+    if (!cached) return null
+
+    const timestamp = localStorage.getItem(CACHE_KEYS.TIMESTAMP)
+    if (!timestamp) return null
+
+    const age = Date.now() - parseInt(timestamp)
+    if (age > CACHE_DURATION) {
+      // Cache expired, clear it
+      clearCache()
+      return null
+    }
+
+    return JSON.parse(cached)
+  } catch (error) {
+    console.error('Error loading from cache:', error)
+    return null
+  }
+}
+
+// Clear all cache
+const clearCache = () => {
+  Object.values(CACHE_KEYS).forEach(key => {
+    localStorage.removeItem(key)
+  })
+}
+
 export function useTransactionStats() {
   const { user } = useAuth()
   const [stats, setStats] = useState<TransactionStats>({
@@ -48,9 +99,39 @@ export function useTransactionStats() {
   useEffect(() => {
     if (!user?.id) return
 
+    // Load from cache immediately for instant display
+    const cachedStats = loadFromCache(CACHE_KEYS.STATS)
+    const cachedMonthlyData = loadFromCache(CACHE_KEYS.MONTHLY_DATA)
+    const cachedProjection = loadFromCache(CACHE_KEYS.PROJECTION)
+
+    if (cachedStats) {
+      setStats({ ...cachedStats, loading: true }) // Keep loading true while fetching fresh data
+    }
+    if (cachedMonthlyData) {
+      setMonthlyData(cachedMonthlyData)
+    }
+    if (cachedProjection) {
+      setCashFlowProjection(cachedProjection)
+    }
+
     const fetchStats = async () => {
       try {
-        setStats((prev) => ({ ...prev, loading: true, error: null }))
+        if (!cachedStats) {
+          // Only show loading if no cache
+          setStats((prev) => ({ ...prev, loading: true, error: null }))
+        }
+
+        // OPTIMIZED: Single query to fetch all transactions with date
+        // Instead of 3 separate queries, fetch once and filter in memory
+        const { data: allTransactions, error: allError } = await supabase
+          .from('transactions')
+          .select('type, amount, date')
+          .eq('user_id', user.id)
+          .order('date', { ascending: true }) as { data: TransactionData[] | null; error: any }
+
+        if (allError) throw allError
+
+        const transactions = allTransactions || []
 
         // Get current month's start and end dates
         const now = new Date()
@@ -61,39 +142,32 @@ export function useTransactionStats() {
         const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
         const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
 
-        // Fetch current month transactions
-        const { data: currentMonthTransactions, error: currentError } = await supabase
-          .from('transactions')
-          .select('type, amount')
-          .eq('user_id', user.id)
-          .gte('date', currentMonthStart.toISOString())
-          .lte('date', currentMonthEnd.toISOString()) as { data: TransactionData[] | null; error: any }
+        // Filter transactions in memory (much faster than 3 separate DB queries)
+        const currentMonthTransactions = transactions.filter(t => {
+          if (!t.date) return false
+          const date = new Date(t.date)
+          return date >= currentMonthStart && date <= currentMonthEnd
+        })
 
-        if (currentError) throw currentError
-
-        // Fetch previous month transactions for growth calculation
-        const { data: previousMonthTransactions, error: previousError } = await supabase
-          .from('transactions')
-          .select('type, amount')
-          .eq('user_id', user.id)
-          .gte('date', previousMonthStart.toISOString())
-          .lte('date', previousMonthEnd.toISOString()) as { data: TransactionData[] | null; error: any }
-
-        if (previousError) throw previousError
+        const previousMonthTransactions = transactions.filter(t => {
+          if (!t.date) return false
+          const date = new Date(t.date)
+          return date >= previousMonthStart && date <= previousMonthEnd
+        })
 
         // Calculate current month stats
         const currentRevenue = currentMonthTransactions
-          ?.filter((t) => t.type === 'income')
-          .reduce((sum, t) => sum + t.amount, 0) || 0
+          .filter((t) => t.type === 'income')
+          .reduce((sum, t) => sum + t.amount, 0)
 
         const currentExpenses = currentMonthTransactions
-          ?.filter((t) => t.type === 'expense')
-          .reduce((sum, t) => sum + t.amount, 0) || 0
+          .filter((t) => t.type === 'expense')
+          .reduce((sum, t) => sum + t.amount, 0)
 
         // Calculate previous month revenue for growth
         const previousRevenue = previousMonthTransactions
-          ?.filter((t) => t.type === 'income')
-          .reduce((sum, t) => sum + t.amount, 0) || 0
+          .filter((t) => t.type === 'income')
+          .reduce((sum, t) => sum + t.amount, 0)
 
         // Calculate monthly growth percentage
         const growth = previousRevenue > 0
@@ -101,24 +175,17 @@ export function useTransactionStats() {
           : 0
 
         // Calculate current balance (all-time income - all-time expenses)
-        const { data: allTransactions, error: allError } = await supabase
-          .from('transactions')
-          .select('type, amount')
-          .eq('user_id', user.id) as { data: TransactionData[] | null; error: any }
+        const allTimeRevenue = transactions
+          .filter((t) => t.type === 'income')
+          .reduce((sum, t) => sum + t.amount, 0)
 
-        if (allError) throw allError
-
-        const allTimeRevenue = allTransactions
-          ?.filter((t) => t.type === 'income')
-          .reduce((sum, t) => sum + t.amount, 0) || 0
-
-        const allTimeExpenses = allTransactions
-          ?.filter((t) => t.type === 'expense')
-          .reduce((sum, t) => sum + t.amount, 0) || 0
+        const allTimeExpenses = transactions
+          .filter((t) => t.type === 'expense')
+          .reduce((sum, t) => sum + t.amount, 0)
 
         const balance = allTimeRevenue - allTimeExpenses
 
-        setStats({
+        const statsData = {
           currentBalance: balance,
           totalRevenue: currentRevenue,
           totalExpenses: currentExpenses,
@@ -126,13 +193,16 @@ export function useTransactionStats() {
           monthlyGrowth: Number(growth.toFixed(1)),
           loading: false,
           error: null,
-        })
+        }
 
-        // Fetch last 6 months data for chart
-        await fetchMonthlyData()
+        setStats(statsData)
+        saveToCache(CACHE_KEYS.STATS, statsData)
 
-        // Generate cash flow projection
-        await generateCashFlowProjection(balance, currentRevenue, currentExpenses)
+        // Generate monthly data from the already-fetched transactions
+        await generateMonthlyDataFromTransactions(transactions)
+
+        // Generate cash flow projection from the same transactions (no extra query)
+        await generateCashFlowProjection(balance, currentRevenue, currentExpenses, transactions)
       } catch (error: any) {
         console.error('Error fetching transaction stats:', error)
         setStats((prev) => ({
@@ -146,36 +216,33 @@ export function useTransactionStats() {
     fetchStats()
   }, [user?.id])
 
-  const fetchMonthlyData = async () => {
-    if (!user?.id) return
-
+  // OPTIMIZED: Process monthly data from already-fetched transactions (no additional queries)
+  const generateMonthlyDataFromTransactions = async (transactions: TransactionData[]) => {
     try {
       const now = new Date()
       const months: MonthlyData[] = []
+      const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
-      // Get last 6 months of data
+      // Get last 6 months of data by filtering the already-fetched transactions
       for (let i = 5; i >= 0; i--) {
         const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1)
         const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59)
 
-        const { data: transactions, error } = await supabase
-          .from('transactions')
-          .select('type, amount')
-          .eq('user_id', user.id)
-          .gte('date', monthStart.toISOString())
-          .lte('date', monthEnd.toISOString()) as { data: TransactionData[] | null; error: any }
+        // Filter transactions for this month (in memory, no DB query)
+        const monthTransactions = transactions.filter(t => {
+          if (!t.date) return false
+          const date = new Date(t.date)
+          return date >= monthStart && date <= monthEnd
+        })
 
-        if (error) throw error
+        const revenue = monthTransactions
+          .filter((t) => t.type === 'income')
+          .reduce((sum, t) => sum + t.amount, 0)
 
-        const revenue = transactions
-          ?.filter((t) => t.type === 'income')
-          .reduce((sum, t) => sum + t.amount, 0) || 0
+        const expenses = monthTransactions
+          .filter((t) => t.type === 'expense')
+          .reduce((sum, t) => sum + t.amount, 0)
 
-        const expenses = transactions
-          ?.filter((t) => t.type === 'expense')
-          .reduce((sum, t) => sum + t.amount, 0) || 0
-
-        const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
         months.push({
           month: monthNames[monthStart.getMonth()],
           receita: revenue,
@@ -184,8 +251,9 @@ export function useTransactionStats() {
       }
 
       setMonthlyData(months)
+      saveToCache(CACHE_KEYS.MONTHLY_DATA, months)
     } catch (error: any) {
-      console.error('Error fetching monthly data:', error)
+      console.error('Error generating monthly data:', error)
     }
   }
 
@@ -322,32 +390,25 @@ export function useTransactionStats() {
     }
 
     setCashFlowProjection(projection)
+    saveToCache(CACHE_KEYS.PROJECTION, projection)
   }
 
   const generateCashFlowProjection = async (
     currentBalance: number,
     monthlyRevenue: number,
-    monthlyExpenses: number
+    monthlyExpenses: number,
+    allTransactions: TransactionData[] // OPTIMIZED: Receive transactions instead of fetching again
   ) => {
     try {
-      if (!user?.id) {
-        throw new Error('User ID not available')
-      }
-
-      // Fetch historical transaction data (last 6 months with full details)
+      // Filter for last 6 months only (for ML projection)
       const sixMonthsAgo = new Date()
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
-      const { data: historicalTransactions, error } = await supabase
-        .from('transactions')
-        .select('type, amount, date, description')
-        .eq('user_id', user.id)
-        .gte('date', sixMonthsAgo.toISOString())
-        .order('date', { ascending: true }) as { data: TransactionData[] | null; error: any }
-
-      if (error) throw error
-
-      const transactions = historicalTransactions || []
+      const transactions = allTransactions.filter(t => {
+        if (!t.date) return false
+        const date = new Date(t.date)
+        return date >= sixMonthsAgo
+      })
 
       // If no historical data, use simple projection
       if (transactions.length < 10) {
@@ -417,6 +478,7 @@ export function useTransactionStats() {
       })
 
       setCashFlowProjection(projection)
+      saveToCache(CACHE_KEYS.PROJECTION, projection)
     } catch (error: any) {
       console.error('Error generating advanced projection:', error)
       // Fallback to simple projection

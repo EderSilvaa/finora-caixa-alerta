@@ -38,6 +38,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { KPISkeleton, ChartSkeleton, TransactionsSkeleton, GoalsSkeleton } from "@/components/DashboardSkeleton";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -566,6 +567,18 @@ const Dashboard = () => {
 
           {/* KPIs Premium - Grid com glassmorphism e gradientes */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+            {/* Show skeletons only if loading AND no cached data */}
+            {stats.loading && currentBalance === 0 && totalRevenue === 0 && totalExpenses === 0 && (
+              <>
+                <KPISkeleton />
+                <KPISkeleton />
+                <KPISkeleton />
+                <KPISkeleton />
+                <KPISkeleton />
+              </>
+            )}
+            {(!stats.loading || currentBalance !== 0 || totalRevenue !== 0 || totalExpenses !== 0) && (
+              <>
             {/* Saldo Atual - Design Premium */}
             <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-xl shadow-2xl hover:shadow-primary/20 transition-all duration-300 hover:-translate-y-1 group">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -668,6 +681,8 @@ const Dashboard = () => {
                 </div>
               </CardHeader>
             </Card>
+              </>
+            )}
           </div>
 
           {/* Action Plan for Critical Cash Flow */}
@@ -694,6 +709,12 @@ const Dashboard = () => {
           {/* Seção de Gráficos Premium */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Gráfico de Projeção - Design Premium */}
+            {stats.loading && cashFlowProjection.length === 0 && (
+              <div className="lg:col-span-2">
+                <ChartSkeleton />
+              </div>
+            )}
+            {(!stats.loading || cashFlowProjection.length > 0) && (
             <Card className="lg:col-span-2 border-0 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl shadow-2xl">
               <CardHeader className="pb-4 space-y-3">
                 <div className="flex items-center justify-between">
@@ -828,6 +849,7 @@ const Dashboard = () => {
                 </div>
               </CardContent>
             </Card>
+            )}
 
             {/* Insights IA - Design Premium */}
             <Card className="border-0 bg-gradient-to-br from-primary/5 via-card/95 to-secondary/5 backdrop-blur-xl shadow-2xl">
