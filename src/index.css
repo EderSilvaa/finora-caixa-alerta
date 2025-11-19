@@ -126,8 +126,13 @@ All colors MUST be HSL.
     transform: none;
   }
 
-  /* Simplify gradients on mobile */
-  .bg-gradient-to-br {
+  /* Simplify gradients on mobile - except for special pages */
+  .bg-gradient-to-br:not(.mobile-gradient-preserve) {
     background: hsl(var(--card));
+  }
+
+  /* Hide animated background elements to prevent flickering */
+  .animate-pulse-glow {
+    display: none;
   }
 }

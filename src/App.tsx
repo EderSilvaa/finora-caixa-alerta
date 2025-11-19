@@ -17,6 +17,7 @@ const Login = lazy(() => import("./pages/Login"));
 const Success = lazy(() => import("./pages/Success"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const BankConnections = lazy(() => import("./pages/BankConnections"));
+const Profile = lazy(() => import("./pages/Profile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -33,7 +34,12 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
             <Route path="/" element={<Onboarding />} />
@@ -56,6 +62,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <BankConnections />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               }
             />

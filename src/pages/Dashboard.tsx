@@ -28,6 +28,7 @@ import { NotificationSettings } from "@/components/NotificationSettings";
 import { useSmartGoals } from "@/hooks/useSmartGoals";
 import { useAIAnalysis } from "@/hooks/useAIAnalysis";
 import { aiService } from "@/services/ai.service";
+import { supabase } from "@/lib/supabase";
 import type { ExportData } from "@/services/export.service";
 import {
   DropdownMenu,
@@ -42,6 +43,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, logout } = useAuth();
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
 
   // Fetch real data from Supabase
   const { stats, monthlyData, cashFlowProjection, daysUntilZero } = useTransactionStats();
@@ -74,6 +76,46 @@ const Dashboard = () => {
       });
     }
   }, [syncStatus.isSyncing]);
+
+  // Fetch user avatar
+  useEffect(() => {
+    const fetchUserAvatar = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error fetching avatar:', error);
+          return;
+        }
+
+        // If profile doesn't exist, create it
+        if (!data) {
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert([{ id: user.id, email: user.email }]);
+
+          if (insertError) {
+            console.error('Error creating profile:', insertError);
+          }
+          return;
+        }
+
+        if (data?.avatar_url) {
+          setUserAvatar(data.avatar_url);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    };
+
+    fetchUserAvatar();
+  }, [user?.id, user?.email]);
 
   const handleLogout = async () => {
     try {
@@ -424,22 +466,23 @@ const Dashboard = () => {
 
       {/* Header com Logout */}
       <header className="relative z-10 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto px-4 py-4 md:py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <Logo size="md" />
-              <h1 className="text-2xl font-bold text-foreground">Finora</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-foreground">Finora</h1>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 border border-border/50">
+            <div className="flex items-center gap-2 md:gap-4">
+              {/* Period indicator - hide on mobile */}
+              <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 border border-border/50">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Últimos {analyzedPeriod} dias</span>
               </div>
 
-              {/* Last Sync Indicator */}
+              {/* Last Sync Indicator - icon only on mobile */}
               {syncStatus.lastSyncAt && (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/30">
+                <div className="flex items-center gap-2 px-2 md:px-4 py-2 rounded-lg bg-primary/10 border border-primary/30">
                   <RefreshCw className={`w-4 h-4 text-primary ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
                   <span className="text-sm text-primary hidden md:inline">
                     Sync: {getLastSyncText()}
@@ -447,12 +490,12 @@ const Dashboard = () => {
                 </div>
               )}
 
-              {/* Bank Connection Button */}
+              {/* Bank Connection Button - icon only on mobile */}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate('/bank-connections')}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 px-2 md:px-4"
               >
                 <Building2 className="w-4 h-4" />
                 <span className="hidden md:inline">Conectar Banco</span>
@@ -461,12 +504,20 @@ const Dashboard = () => {
               {/* Alerts Center */}
               <AlertsCenter />
 
-              {/* User Menu */}
+              {/* User Menu - always show profile circle */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-muted/50">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                      <User className="w-4 h-4 text-white" />
+                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-muted/50 px-2 md:px-4">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shrink-0 overflow-hidden">
+                      {userAvatar ? (
+                        <img
+                          src={userAvatar}
+                          alt="Avatar"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="w-4 h-4 text-white" />
+                      )}
                     </div>
                     <span className="text-sm font-medium hidden md:block">{user?.email?.split('@')[0] || 'Usuário'}</span>
                   </Button>
@@ -474,7 +525,10 @@ const Dashboard = () => {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="flex items-center gap-2">
+                  <DropdownMenuItem
+                    onClick={() => navigate('/profile')}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
                     <User className="w-4 h-4" />
                     <span>Perfil</span>
                   </DropdownMenuItem>
