@@ -50,18 +50,11 @@ const Onboarding = () => {
 
           <div className="flex items-center gap-3">
             <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/dashboard")}
-            >
-              Dashboard
-            </Button>
-            <Button
               variant="gradient"
-              onClick={() => navigate("/connect")}
+              onClick={() => navigate("/dashboard")}
               className="shadow-glow"
             >
-              Começar grátis
+              Começar
             </Button>
           </div>
         </div>
