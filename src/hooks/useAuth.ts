@@ -1,11 +1,13 @@
 // Authentication Hook
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { authService } from '@/services/auth.service'
 import { supabase } from '@/lib/supabase'
 import type { User } from '@/types'
 import type { SignupInput, LoginInput } from '@/lib/validations'
 import { useToast } from './use-toast'
+
+// Import authService directly from the service file
+import { authService } from '@/services/auth.service'
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
