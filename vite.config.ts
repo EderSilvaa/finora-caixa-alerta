@@ -65,31 +65,34 @@ VitePWA({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        // Manual chunking for better code splitting
+        // Manual chunking - only for node_modules, app code stays together
         manualChunks: (id) => {
-          // Vendor chunks
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
-              return 'react-vendor';
-            }
-            if (id.includes('@radix-ui')) {
-              return 'ui-vendor';
-            }
-            if (id.includes('@tanstack/react-query')) {
-              return 'query-vendor';
-            }
-            if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) {
-              return 'form-vendor';
-            }
-            if (id.includes('@supabase/supabase-js')) {
-              return 'supabase-vendor';
-            }
-            if (id.includes('recharts')) {
-              return 'charts';
-            }
-            if (id.includes('lucide-react')) {
-              return 'icons';
-            }
+          // Keep all app code (src/) in main chunk to avoid circular dependency issues
+          if (!id.includes('node_modules')) {
+            return 'index';
+          }
+
+          // Vendor chunks - only split node_modules
+          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+            return 'react-vendor';
+          }
+          if (id.includes('@radix-ui')) {
+            return 'ui-vendor';
+          }
+          if (id.includes('@tanstack/react-query')) {
+            return 'query-vendor';
+          }
+          if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) {
+            return 'form-vendor';
+          }
+          if (id.includes('@supabase/supabase-js')) {
+            return 'supabase-vendor';
+          }
+          if (id.includes('recharts')) {
+            return 'charts';
+          }
+          if (id.includes('lucide-react')) {
+            return 'icons';
           }
         },
       },
