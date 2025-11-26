@@ -1,16 +1,12 @@
-// Pluggy Service - Open Finance Brasil Integration (Browser-compatible)
-const PLUGGY_API_BASE = 'https://api.pluggy.ai'
+// Pluggy Service - Open Finance Brasil Integration
+// Uses secure Edge Functions instead of direct Pluggy API calls
+import { supabase } from '@/lib/supabase'
 
 const clientId = import.meta.env.VITE_PLUGGY_CLIENT_ID
-const clientSecret = import.meta.env.VITE_PLUGGY_CLIENT_SECRET
 
-if (!clientId || !clientSecret) {
-  console.error('Missing Pluggy credentials. Please check your .env file.')
+if (!clientId) {
+  console.error('Missing Pluggy Client ID. Please check your .env file.')
 }
-
-// API Key cache
-let cachedApiKey: string | null = null
-let apiKeyExpiry: number | null = null
 
 export interface PluggyItem {
   id: string
@@ -49,88 +45,28 @@ export interface ConnectTokenResponse {
   accessToken: string
 }
 
-/**
- * Get API Key from Pluggy (cached for 24 hours)
- */
-async function getApiKey(): Promise<string> {
-  // Return cached key if still valid
-  if (cachedApiKey && apiKeyExpiry && Date.now() < apiKeyExpiry) {
-    return cachedApiKey
-  }
-
-  try {
-    console.log('[PLUGGY AUTH] Attempting authentication...')
-    console.log('[PLUGGY AUTH] Client ID:', clientId)
-    console.log('[PLUGGY AUTH] Client Secret exists:', !!clientSecret)
-
-    const response = await fetch(`${PLUGGY_API_BASE}/auth`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        clientId,
-        clientSecret,
-      }),
-    })
-
-    console.log('[PLUGGY AUTH] Response status:', response.status)
-
-    const responseText = await response.text()
-    console.log('[PLUGGY AUTH] Response body:', responseText)
-
-    if (!response.ok) {
-      throw new Error(`Pluggy auth failed: ${response.status} - ${responseText}`)
-    }
-
-    const data = JSON.parse(responseText)
-    cachedApiKey = data.apiKey
-    // Cache for 23 hours (API key valid for 24h)
-    apiKeyExpiry = Date.now() + 23 * 60 * 60 * 1000
-
-    console.log('[PLUGGY AUTH] Authentication successful!')
-    return cachedApiKey!
-  } catch (error: any) {
-    console.error('[PLUGGY AUTH] Error:', error)
-    throw new Error('Failed to authenticate with Pluggy')
-  }
-}
-
-/**
- * Make authenticated request to Pluggy API
- */
-async function pluggyRequest<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const apiKey = await getApiKey()
-
-  const response = await fetch(`${PLUGGY_API_BASE}${endpoint}`, {
-    ...options,
-    headers: {
-      'X-API-KEY': apiKey,
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`Pluggy API error: ${response.status} - ${errorText}`)
-  }
-
-  return response.json()
-}
-
 export const pluggyService = {
   /**
    * Create a Connect Token for Pluggy Connect Widget
    */
   async createConnectToken(): Promise<ConnectTokenResponse> {
     try {
-      const data = await pluggyRequest<ConnectTokenResponse>('/connect_token', {
-        method: 'POST',
+      console.log('[PLUGGY] Creating connect token...')
+
+      // Note: supabase.functions.invoke() automatically sends auth token if session exists
+      const { data, error } = await supabase.functions.invoke('pluggy-api', {
+        body: {
+          action: 'create-connect-token',
+        },
       })
+
+      console.log('[PLUGGY] Response:', { data, error })
+
+      if (error) {
+        console.error('[PLUGGY] Edge Function error details:', error)
+        throw new Error(error.message || 'Failed to create connect token')
+      }
+
       return data
     } catch (error: any) {
       console.error('Error creating Pluggy connect token:', error)
@@ -143,8 +79,17 @@ export const pluggyService = {
    */
   async getItems(): Promise<PluggyItem[]> {
     try {
-      const data = await pluggyRequest<{ results: PluggyItem[] }>('/items')
-      return data.results
+      const { data, error } = await supabase.functions.invoke('pluggy-api', {
+        body: {
+          action: 'get-items',
+        },
+      })
+
+      if (error) {
+        throw new Error(error.message || 'Failed to fetch connected banks')
+      }
+
+      return data || []
     } catch (error: any) {
       console.error('Error fetching Pluggy items:', error)
       throw new Error(error.message || 'Failed to fetch connected banks')
@@ -156,7 +101,17 @@ export const pluggyService = {
    */
   async getItem(itemId: string): Promise<PluggyItem> {
     try {
-      const data = await pluggyRequest<PluggyItem>(`/items/${itemId}`)
+      const { data, error } = await supabase.functions.invoke('pluggy-api', {
+        body: {
+          action: 'get-item',
+          itemId,
+        },
+      })
+
+      if (error) {
+        throw new Error(error.message || 'Failed to fetch bank connection')
+      }
+
       return data
     } catch (error: any) {
       console.error('Error fetching Pluggy item:', error)
@@ -169,9 +124,16 @@ export const pluggyService = {
    */
   async deleteItem(itemId: string): Promise<void> {
     try {
-      await pluggyRequest(`/items/${itemId}`, {
-        method: 'DELETE',
+      const { error } = await supabase.functions.invoke('pluggy-api', {
+        body: {
+          action: 'delete-item',
+          itemId,
+        },
       })
+
+      if (error) {
+        throw new Error(error.message || 'Failed to disconnect bank')
+      }
     } catch (error: any) {
       console.error('Error deleting Pluggy item:', error)
       throw new Error(error.message || 'Failed to disconnect bank')
@@ -183,10 +145,18 @@ export const pluggyService = {
    */
   async getAccounts(itemId: string): Promise<PluggyAccount[]> {
     try {
-      const data = await pluggyRequest<{ results: PluggyAccount[] }>(
-        `/accounts?itemId=${itemId}`
-      )
-      return data.results
+      const { data, error } = await supabase.functions.invoke('pluggy-api', {
+        body: {
+          action: 'get-accounts',
+          itemId,
+        },
+      })
+
+      if (error) {
+        throw new Error(error.message || 'Failed to fetch accounts')
+      }
+
+      return data || []
     } catch (error: any) {
       console.error('Error fetching Pluggy accounts:', error)
       throw new Error(error.message || 'Failed to fetch accounts')
@@ -198,7 +168,17 @@ export const pluggyService = {
    */
   async getAccount(accountId: string): Promise<PluggyAccount> {
     try {
-      const data = await pluggyRequest<PluggyAccount>(`/accounts/${accountId}`)
+      const { data, error } = await supabase.functions.invoke('pluggy-api', {
+        body: {
+          action: 'get-account',
+          accountId,
+        },
+      })
+
+      if (error) {
+        throw new Error(error.message || 'Failed to fetch account')
+      }
+
       return data
     } catch (error: any) {
       console.error('Error fetching Pluggy account:', error)
@@ -215,12 +195,20 @@ export const pluggyService = {
     to?: string
   ): Promise<PluggyTransaction[]> {
     try {
-      let url = `/transactions?accountId=${accountId}`
-      if (from) url += `&from=${from}`
-      if (to) url += `&to=${to}`
+      const { data, error } = await supabase.functions.invoke('pluggy-api', {
+        body: {
+          action: 'get-transactions',
+          accountId,
+          from,
+          to,
+        },
+      })
 
-      const data = await pluggyRequest<{ results: PluggyTransaction[] }>(url)
-      return data.results
+      if (error) {
+        throw new Error(error.message || 'Failed to fetch transactions')
+      }
+
+      return data || []
     } catch (error: any) {
       console.error('Error fetching Pluggy transactions:', error)
       throw new Error(error.message || 'Failed to fetch transactions')
@@ -232,8 +220,17 @@ export const pluggyService = {
    */
   async getConnectors(): Promise<any[]> {
     try {
-      const data = await pluggyRequest<{ results: any[] }>('/connectors')
-      return data.results
+      const { data, error } = await supabase.functions.invoke('pluggy-api', {
+        body: {
+          action: 'get-connectors',
+        },
+      })
+
+      if (error) {
+        throw new Error(error.message || 'Failed to fetch available banks')
+      }
+
+      return data || []
     } catch (error: any) {
       console.error('Error fetching Pluggy connectors:', error)
       throw new Error(error.message || 'Failed to fetch available banks')
@@ -294,6 +291,6 @@ export const pluggyService = {
    * Check if Pluggy is properly configured
    */
   isConfigured(): boolean {
-    return !!(clientId && clientSecret)
+    return !!clientId
   },
 }

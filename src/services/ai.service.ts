@@ -1,19 +1,6 @@
 // AI Service - GPT-4o Integration for Predictive Financial Analysis
-import OpenAI from 'openai'
+// Uses secure Edge Functions instead of direct OpenAI API calls
 import { supabase } from '@/lib/supabase'
-
-const apiKey = import.meta.env.VITE_OPENAI_API_KEY
-
-if (!apiKey) {
-  console.warn('OpenAI API key not found. AI features will be disabled.')
-}
-
-const openai = apiKey ? new OpenAI({
-  apiKey,
-  dangerouslyAllowBrowser: true, // Para uso no frontend (use backend em produção!)
-  timeout: 30000, // 30 segundos timeout
-  maxRetries: 1 // Apenas 1 retry
-}) : null
 
 // Types
 export interface AIInsight {
@@ -54,73 +41,35 @@ export const aiService = {
    * Check if AI service is configured and ready
    */
   isConfigured(): boolean {
-    return !!openai
+    return true // Edge Functions handle API key validation
   },
 
   /**
    * Generate comprehensive financial insights for a user
    */
   async generateInsights(userId: string): Promise<AIInsight[]> {
-    if (!openai) {
-      throw new Error('OpenAI not configured')
-    }
-
     try {
       console.log('[AI] Generating insights for user:', userId)
 
-      // Get user's financial data
-      const financialData = await this.getUserFinancialData(userId)
-
-      // Create prompt for GPT-4o
-      const prompt = this.createInsightsPrompt(financialData)
-
-      // Call GPT-4o with timeout
-      const completionPromise = openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: 'CFO virtual do Finora. 10k+ usuários, R$ 2M+ economizados. Insights diretos com números reais, ações executáveis hoje. Zero teoria.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.7,
-        max_tokens: 1500
+      // Note: supabase.functions.invoke() automatically sends auth token if session exists
+      const { data, error } = await supabase.functions.invoke('rapid-service', {
+        body: {
+          action: 'generate-insights',
+          userId,
+        },
       })
 
-      // Add 35 second timeout
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('OpenAI API timeout after 35s')), 35000)
-      )
+      console.log('[AI] Response:', { data, error })
 
-      const completion = await Promise.race([completionPromise, timeoutPromise]) as any
-
-      const response = completion.choices[0].message.content
-      if (!response) {
-        throw new Error('Empty response from OpenAI')
+      if (error) {
+        console.error('[AI] Edge Function error details:', error)
+        throw new Error(error.message || 'Edge Function error')
       }
 
-      const insights = JSON.parse(response)
-      console.log('[AI] Generated', insights.insights?.length || 0, 'insights')
-
-      // Save insights to Supabase (fire-and-forget, don't block)
-      this.saveInsights(userId, insights.insights || []).catch(() => {
-        // Silently ignore errors
-      })
-
-      return insights.insights || []
+      console.log('[AI] Generated', data?.length || 0, 'insights')
+      return data || []
     } catch (error: any) {
       console.error('[AI] Error generating insights:', error)
-      console.error('[AI] Error details:', {
-        message: error.message,
-        code: error.code,
-        type: error.type,
-        status: error.status
-      })
 
       // Return fallback insights on error
       if (error.message?.includes('timeout') || error.message?.includes('ECONNREFUSED')) {
@@ -136,48 +85,23 @@ export const aiService = {
    * Predict future balance using AI
    */
   async predictBalance(userId: string, daysAhead: number = 30): Promise<BalancePrediction> {
-    if (!openai) {
-      throw new Error('OpenAI not configured')
-    }
-
     try {
       console.log(`[AI] Predicting balance for ${daysAhead} days ahead`)
 
-      const financialData = await this.getUserFinancialData(userId)
-      const prompt = this.createBalancePredictionPrompt(financialData, daysAhead)
-
-      const completionPromise = openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: 'Especialista modelagem financeira. Use tendências, sazonalidade, médias móveis. Previsões precisas e confiança honesta.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.3,
-        max_tokens: 800
+      const { data, error } = await supabase.functions.invoke('rapid-service', {
+        body: {
+          action: 'predict-balance',
+          userId,
+          daysAhead,
+        },
       })
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('OpenAI API timeout after 35s')), 35000)
-      )
-
-      const completion = await Promise.race([completionPromise, timeoutPromise]) as any
-
-      const response = completion.choices[0].message.content
-      if (!response) {
-        throw new Error('Empty response from OpenAI')
+      if (error) {
+        throw new Error(error.message || 'Edge Function error')
       }
 
-      const prediction = JSON.parse(response)
-      console.log('[AI] Balance prediction:', prediction)
-
-      return prediction
+      console.log('[AI] Balance prediction:', data)
+      return data
     } catch (error: any) {
       console.error('[AI] Error predicting balance:', error)
       throw new Error(`Failed to predict balance: ${error.message}`)
@@ -188,42 +112,22 @@ export const aiService = {
    * Detect spending anomalies
    */
   async detectAnomalies(userId: string): Promise<AnomalyDetection[]> {
-    if (!openai) {
-      throw new Error('OpenAI not configured')
-    }
-
     try {
       console.log('[AI] Detecting anomalies')
 
-      const financialData = await this.getUserFinancialData(userId)
-      const prompt = this.createAnomalyDetectionPrompt(financialData)
-
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: 'Detector de fraudes/anomalias. Identifique: transações suspeitas, duplicatas, valores 200%+ acima da média.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.2,
-        max_tokens: 1000  // Reduced from 1500
+      const { data, error } = await supabase.functions.invoke('rapid-service', {
+        body: {
+          action: 'detect-anomalies',
+          userId,
+        },
       })
 
-      const response = completion.choices[0].message.content
-      if (!response) {
-        throw new Error('Empty response from OpenAI')
+      if (error) {
+        throw new Error(error.message || 'Edge Function error')
       }
 
-      const result = JSON.parse(response)
-      console.log('[AI] Detected', result.anomalies?.length || 0, 'anomalies')
-
-      return result.anomalies || []
+      console.log('[AI] Detected', data?.length || 0, 'anomalies')
+      return data || []
     } catch (error: any) {
       console.error('[AI] Error detecting anomalies:', error)
       throw new Error(`Failed to detect anomalies: ${error.message}`)
@@ -234,42 +138,22 @@ export const aiService = {
    * Analyze spending patterns by category
    */
   async analyzeSpendingPatterns(userId: string): Promise<SpendingPattern[]> {
-    if (!openai) {
-      throw new Error('OpenAI not configured')
-    }
-
     try {
       console.log('[AI] Analyzing spending patterns')
 
-      const financialData = await this.getUserFinancialData(userId)
-      const prompt = this.createSpendingPatternsPrompt(financialData)
-
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: 'Analista comportamento financeiro. Identifique padrões, tendências, oportunidades economia. Use números e %.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.4,
-        max_tokens: 1200  // Reduced from 2000
+      const { data, error } = await supabase.functions.invoke('rapid-service', {
+        body: {
+          action: 'analyze-patterns',
+          userId,
+        },
       })
 
-      const response = completion.choices[0].message.content
-      if (!response) {
-        throw new Error('Empty response from OpenAI')
+      if (error) {
+        throw new Error(error.message || 'Edge Function error')
       }
 
-      const result = JSON.parse(response)
-      console.log('[AI] Analyzed', result.patterns?.length || 0, 'spending patterns')
-
-      return result.patterns || []
+      console.log('[AI] Analyzed', data?.length || 0, 'spending patterns')
+      return data || []
     } catch (error: any) {
       console.error('[AI] Error analyzing patterns:', error)
       throw new Error(`Failed to analyze spending patterns: ${error.message}`)
@@ -506,42 +390,25 @@ Analise JSON:
    * Generate action plan for critical cash flow situation
    */
   async generateActionPlan(userId: string, daysUntilZero: number, currentBalance: number, monthlyBurn: number): Promise<any[]> {
-    if (!openai) {
-      throw new Error('OpenAI not configured')
-    }
-
     try {
       console.log(`[AI] Generating action plan for critical situation: ${daysUntilZero} days until zero`)
 
-      const financialData = await this.getUserFinancialData(userId)
-      const prompt = this.createActionPlanPrompt(financialData, daysUntilZero, currentBalance, monthlyBurn)
-
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: 'Consultor crises financeiras. Gere ações executáveis HOJE. Específico: quem, quanto, quando, como. Zero teoria, só ação.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.7,
-        max_tokens: 1500  // Reduced from 2000
+      const { data, error } = await supabase.functions.invoke('rapid-service', {
+        body: {
+          action: 'generate-action-plan',
+          userId,
+          daysUntilZero,
+          currentBalance,
+          monthlyBurn,
+        },
       })
 
-      const response = completion.choices[0].message.content
-      if (!response) {
-        throw new Error('Empty response from OpenAI')
+      if (error) {
+        throw new Error(error.message || 'Edge Function error')
       }
 
-      const result = JSON.parse(response)
-      console.log('[AI] Generated', result.actions?.length || 0, 'action items')
-
-      return result.actions || []
+      console.log('[AI] Generated', data?.length || 0, 'action items')
+      return data || []
     } catch (error: any) {
       console.error('[AI] Error generating action plan:', error)
       throw new Error(`Failed to generate action plan: ${error.message}`)
