@@ -78,4 +78,8 @@ export type TransactionCategory =
   | 'Fixo'
   | 'Variável'
   | 'Receita'
+  | 'Impostos'
   | 'Outros'
+
+// Export tax types
+export * from './tax'

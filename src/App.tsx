@@ -18,6 +18,7 @@ const Success = lazy(() => import("./pages/Success"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const BankConnections = lazy(() => import("./pages/BankConnections"));
 const Profile = lazy(() => import("./pages/Profile"));
+const TaxDashboard = lazy(() => import("./pages/TaxDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -70,6 +71,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/taxes"
+              element={
+                <ProtectedRoute>
+                  <TaxDashboard />
                 </ProtectedRoute>
               }
             />

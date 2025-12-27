@@ -681,6 +681,31 @@ const Dashboard = () => {
                 </div>
               </CardHeader>
             </Card>
+
+            {/* Impostos - FINORA TAX */}
+            <Card
+              className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-500/10 via-card/90 to-card/70 backdrop-blur-xl shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:-translate-y-1 group cursor-pointer"
+              onClick={() => navigate('/dashboard/taxes')}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <CardHeader className="pb-2 relative">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Impostos</CardTitle>
+                    <div className="text-2xl font-bold text-blue-600">
+                      FINORA TAX
+                    </div>
+                    <div className="text-xs text-blue-600 font-medium flex items-center gap-1">
+                      Calcular impostos
+                      <ArrowRight className="w-3 h-3" />
+                    </div>
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/10 flex items-center justify-center">
+                    <PieChart className="w-6 h-6 text-blue-600" />
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
               </>
             )}
           </div>

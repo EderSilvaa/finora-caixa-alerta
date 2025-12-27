@@ -105,3 +105,54 @@ export const TRANSACTION_CATEGORIES = [
 ] as const
 
 export const transactionCategorySchema = z.enum(TRANSACTION_CATEGORIES)
+
+// ============================================================
+// TAX SCHEMAS
+// ============================================================
+
+// Tax Settings Schema
+export const taxSettingsSchema = z.object({
+  regime: z.enum(['simples_nacional', 'presumido', 'real', 'mei'], {
+    required_error: 'Regime tributário é obrigatório',
+  }),
+  simples_anexo: z.enum(['I', 'II', 'III', 'IV', 'V']).optional(),
+  iss_rate: z
+    .number()
+    .min(0, 'Taxa de ISS não pode ser negativa')
+    .max(10, 'Taxa de ISS muito alta')
+    .optional()
+    .default(2.0),
+  iss_municipality: z.string().optional(),
+  has_employees: z.boolean().optional().default(false),
+  employee_count: z.number().nonnegative('Número de funcionários não pode ser negativo').optional().default(0),
+  prolabore_amount: z.number().nonnegative('Pró-labore não pode ser negativo').optional(),
+})
+
+export type TaxSettingsInput = z.infer<typeof taxSettingsSchema>
+
+// Tax Calculation Schema
+export const taxCalculationSchema = z.object({
+  month: z.number().int().min(1, 'Mês inválido').max(12, 'Mês inválido'),
+  year: z.number().int().min(2020, 'Ano inválido').max(2100, 'Ano inválido'),
+  das_amount: z.number().nonnegative('Valor de DAS não pode ser negativo').optional(),
+  iss_amount: z.number().nonnegative('Valor de ISS não pode ser negativo').optional(),
+  inss_amount: z.number().nonnegative('Valor de INSS não pode ser negativo').optional(),
+  irpj_amount: z.number().nonnegative('Valor de IRPJ não pode ser negativo').optional(),
+})
+
+export type TaxCalculationInput = z.infer<typeof taxCalculationSchema>
+
+// Tax Payment Schema
+export const taxPaymentSchema = z.object({
+  calculation_id: z.string().uuid().optional(),
+  tax_type: z.enum(['das', 'darf_irpj', 'darf_iss', 'darf_inss', 'other'], {
+    required_error: 'Tipo de imposto é obrigatório',
+  }),
+  amount: z.number().positive('Valor deve ser maior que zero'),
+  due_date: z.string({
+    required_error: 'Data de vencimento é obrigatória',
+  }),
+  payment_code: z.string().optional(),
+})
+
+export type TaxPaymentInput = z.infer<typeof taxPaymentSchema>
