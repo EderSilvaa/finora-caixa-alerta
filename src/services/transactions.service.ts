@@ -66,7 +66,7 @@ export const transactionsService = {
    */
   async createTransaction(userId: string, input: TransactionInput): Promise<Transaction> {
     const { data, error } = await supabase
-      .from('transactions')
+      .from('transactions' as any)
       .insert({
         user_id: userId,
         type: input.type,
@@ -94,6 +94,39 @@ export const transactionsService = {
   },
 
   /**
+   * Create multiple transactions (Batch)
+   */
+  async createTransactions(userId: string, inputs: TransactionInput[]): Promise<Transaction[]> {
+    const { data, error } = await supabase
+      .from('transactions' as any)
+      .insert(
+        inputs.map(input => ({
+          user_id: userId,
+          type: input.type,
+          amount: input.amount,
+          description: input.description,
+          category: input.category,
+          date: input.date || new Date().toISOString(),
+        }))
+      )
+      .select()
+
+    if (error) throw error
+
+    return data.map((t: any) => ({
+      id: t.id,
+      userId: t.user_id,
+      type: t.type as 'income' | 'expense',
+      amount: Number(t.amount),
+      description: t.description,
+      category: t.category,
+      date: t.date,
+      createdAt: t.created_at,
+      updatedAt: t.updated_at,
+    }))
+  },
+
+  /**
    * Update transaction
    */
   async updateTransaction(
@@ -101,7 +134,7 @@ export const transactionsService = {
     updates: Partial<TransactionInput>
   ): Promise<Transaction> {
     const { data, error } = await supabase
-      .from('transactions')
+      .from('transactions' as any)
       .update(updates)
       .eq('id', transactionId)
       .select()

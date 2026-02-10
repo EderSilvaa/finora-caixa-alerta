@@ -42,6 +42,7 @@ export function useTransactions(userId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['monthly-stats', userId] })
       queryClient.invalidateQueries({ queryKey: ['current-balance', userId] })
       queryClient.invalidateQueries({ queryKey: ['projections', userId] })
+      queryClient.invalidateQueries({ queryKey: ['transaction-stats', userId] })
 
       toast({
         title: data.type === 'income' ? 'Receita registrada!' : 'Despesa registrada!',
@@ -57,6 +58,31 @@ export function useTransactions(userId: string | undefined) {
     },
   })
 
+  // Batch create transactions mutation
+  const createTransactions = useMutation({
+    mutationFn: (inputs: TransactionInput[]) =>
+      transactionsService.createTransactions(userId!, inputs),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['transactions', userId] })
+      queryClient.invalidateQueries({ queryKey: ['monthly-stats', userId] })
+      queryClient.invalidateQueries({ queryKey: ['current-balance', userId] })
+      queryClient.invalidateQueries({ queryKey: ['projections', userId] })
+      queryClient.invalidateQueries({ queryKey: ['transaction-stats', userId] })
+
+      toast({
+        title: 'Importação concluída!',
+        description: `${data.length} transações importadas com sucesso.`,
+      })
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Erro na importação',
+        description: error.message,
+        variant: 'destructive',
+      })
+    },
+  })
+
   // Update transaction mutation
   const updateTransaction = useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<TransactionInput> }) =>
@@ -65,6 +91,7 @@ export function useTransactions(userId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['transactions', userId] })
       queryClient.invalidateQueries({ queryKey: ['monthly-stats', userId] })
       queryClient.invalidateQueries({ queryKey: ['current-balance', userId] })
+      queryClient.invalidateQueries({ queryKey: ['transaction-stats', userId] })
 
       toast({
         title: 'Transação atualizada!',
@@ -86,6 +113,7 @@ export function useTransactions(userId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['transactions', userId] })
       queryClient.invalidateQueries({ queryKey: ['monthly-stats', userId] })
       queryClient.invalidateQueries({ queryKey: ['current-balance', userId] })
+      queryClient.invalidateQueries({ queryKey: ['transaction-stats', userId] })
 
       toast({
         title: 'Transação excluída!',
@@ -107,9 +135,11 @@ export function useTransactions(userId: string | undefined) {
     isLoading,
     error,
     createTransaction: createTransaction.mutate,
+    createTransactions: createTransactions.mutateAsync,
     updateTransaction: updateTransaction.mutate,
     deleteTransaction: deleteTransaction.mutate,
     isCreating: createTransaction.isPending,
+    isImporting: createTransactions.isPending,
     isUpdating: updateTransaction.isPending,
     isDeleting: deleteTransaction.isPending,
   }

@@ -1,5 +1,5 @@
 // useTransactionStats Hook - Calculate financial statistics from real transaction data
-import { useState, useEffect } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
 
@@ -9,8 +9,6 @@ export interface TransactionStats {
   totalExpenses: number
   monthlySavings: number
   monthlyGrowth: number
-  loading: boolean
-  error: string | null
 }
 
 export interface MonthlyData {
@@ -31,193 +29,106 @@ interface TransactionData {
   description?: string
 }
 
-// localStorage cache keys
-const CACHE_KEYS = {
-  STATS: 'finora_stats_cache',
-  MONTHLY_DATA: 'finora_monthly_data_cache',
-  PROJECTION: 'finora_projection_cache',
-  TIMESTAMP: 'finora_cache_timestamp',
-}
-
-// Cache duration: 5 minutes
-const CACHE_DURATION = 5 * 60 * 1000
-
-// Save data to localStorage cache
-const saveToCache = (key: string, data: any) => {
-  try {
-    localStorage.setItem(key, JSON.stringify(data))
-    localStorage.setItem(CACHE_KEYS.TIMESTAMP, Date.now().toString())
-  } catch (error) {
-    console.error('Error saving to cache:', error)
-  }
-}
-
-// Load data from localStorage cache
-const loadFromCache = (key: string) => {
-  try {
-    const cached = localStorage.getItem(key)
-    if (!cached) return null
-
-    const timestamp = localStorage.getItem(CACHE_KEYS.TIMESTAMP)
-    if (!timestamp) return null
-
-    const age = Date.now() - parseInt(timestamp)
-    if (age > CACHE_DURATION) {
-      // Cache expired, clear it
-      clearCache()
-      return null
-    }
-
-    return JSON.parse(cached)
-  } catch (error) {
-    console.error('Error loading from cache:', error)
-    return null
-  }
-}
-
-// Clear all cache
-const clearCache = () => {
-  Object.values(CACHE_KEYS).forEach(key => {
-    localStorage.removeItem(key)
-  })
-}
-
 export function useTransactionStats() {
   const { user } = useAuth()
-  const [stats, setStats] = useState<TransactionStats>({
-    currentBalance: 0,
-    totalRevenue: 0,
-    totalExpenses: 0,
-    monthlySavings: 0,
-    monthlyGrowth: 0,
-    loading: true,
-    error: null,
-  })
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
-  const [cashFlowProjection, setCashFlowProjection] = useState<CashFlowProjection[]>([])
 
-  useEffect(() => {
-    if (!user?.id) return
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['transaction-stats', user?.id],
+    queryFn: async () => {
+      if (!user?.id) throw new Error("User not found");
 
-    // Load from cache immediately for instant display
-    const cachedStats = loadFromCache(CACHE_KEYS.STATS)
-    const cachedMonthlyData = loadFromCache(CACHE_KEYS.MONTHLY_DATA)
-    const cachedProjection = loadFromCache(CACHE_KEYS.PROJECTION)
+      // OPTIMIZED: Single query to fetch all transactions with date
+      // Instead of 3 separate queries, fetch once and filter in memory
+      const { data: allTransactions, error: allError } = await supabase
+        .from('transactions' as any)
+        .select('type, amount, date')
+        .eq('user_id', user.id)
+        .order('date', { ascending: true }) as { data: TransactionData[] | null; error: any }
 
-    if (cachedStats) {
-      setStats({ ...cachedStats, loading: true }) // Keep loading true while fetching fresh data
-    }
-    if (cachedMonthlyData) {
-      setMonthlyData(cachedMonthlyData)
-    }
-    if (cachedProjection) {
-      setCashFlowProjection(cachedProjection)
-    }
+      if (allError) throw allError
 
-    const fetchStats = async () => {
-      try {
-        if (!cachedStats) {
-          // Only show loading if no cache
-          setStats((prev) => ({ ...prev, loading: true, error: null }))
-        }
+      const transactions = allTransactions || []
 
-        // OPTIMIZED: Single query to fetch all transactions with date
-        // Instead of 3 separate queries, fetch once and filter in memory
-        const { data: allTransactions, error: allError } = await supabase
-          .from('transactions')
-          .select('type, amount, date')
-          .eq('user_id', user.id)
-          .order('date', { ascending: true }) as { data: TransactionData[] | null; error: any }
+      // Get current month's start and end dates
+      const now = new Date()
+      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+      const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
 
-        if (allError) throw allError
+      // Get previous month's dates for comparison
+      const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
 
-        const transactions = allTransactions || []
+      // Filter transactions in memory (much faster than 3 separate DB queries)
+      const currentMonthTransactions = transactions.filter(t => {
+        if (!t.date) return false
+        const date = new Date(t.date)
+        return date >= currentMonthStart && date <= currentMonthEnd
+      })
 
-        // Get current month's start and end dates
-        const now = new Date()
-        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-        const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+      const previousMonthTransactions = transactions.filter(t => {
+        if (!t.date) return false
+        const date = new Date(t.date)
+        return date >= previousMonthStart && date <= previousMonthEnd
+      })
 
-        // Get previous month's dates for comparison
-        const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-        const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
+      // Calculate current month stats
+      const currentRevenue = currentMonthTransactions
+        .filter((t) => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0)
 
-        // Filter transactions in memory (much faster than 3 separate DB queries)
-        const currentMonthTransactions = transactions.filter(t => {
-          if (!t.date) return false
-          const date = new Date(t.date)
-          return date >= currentMonthStart && date <= currentMonthEnd
-        })
+      const currentExpenses = currentMonthTransactions
+        .filter((t) => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0)
 
-        const previousMonthTransactions = transactions.filter(t => {
-          if (!t.date) return false
-          const date = new Date(t.date)
-          return date >= previousMonthStart && date <= previousMonthEnd
-        })
+      // Calculate previous month revenue for growth
+      const previousRevenue = previousMonthTransactions
+        .filter((t) => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0)
 
-        // Calculate current month stats
-        const currentRevenue = currentMonthTransactions
-          .filter((t) => t.type === 'income')
-          .reduce((sum, t) => sum + t.amount, 0)
+      // Calculate monthly growth percentage
+      const growth = previousRevenue > 0
+        ? ((currentRevenue - previousRevenue) / previousRevenue) * 100
+        : 0
 
-        const currentExpenses = currentMonthTransactions
-          .filter((t) => t.type === 'expense')
-          .reduce((sum, t) => sum + t.amount, 0)
+      // Calculate current balance (all-time income - all-time expenses)
+      const allTimeRevenue = transactions
+        .filter((t) => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0)
 
-        // Calculate previous month revenue for growth
-        const previousRevenue = previousMonthTransactions
-          .filter((t) => t.type === 'income')
-          .reduce((sum, t) => sum + t.amount, 0)
+      const allTimeExpenses = transactions
+        .filter((t) => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0)
 
-        // Calculate monthly growth percentage
-        const growth = previousRevenue > 0
-          ? ((currentRevenue - previousRevenue) / previousRevenue) * 100
-          : 0
+      const balance = allTimeRevenue - allTimeExpenses
 
-        // Calculate current balance (all-time income - all-time expenses)
-        const allTimeRevenue = transactions
-          .filter((t) => t.type === 'income')
-          .reduce((sum, t) => sum + t.amount, 0)
-
-        const allTimeExpenses = transactions
-          .filter((t) => t.type === 'expense')
-          .reduce((sum, t) => sum + t.amount, 0)
-
-        const balance = allTimeRevenue - allTimeExpenses
-
-        const statsData = {
-          currentBalance: balance,
-          totalRevenue: currentRevenue,
-          totalExpenses: currentExpenses,
-          monthlySavings: currentRevenue - currentExpenses,
-          monthlyGrowth: Number(growth.toFixed(1)),
-          loading: false,
-          error: null,
-        }
-
-        setStats(statsData)
-        saveToCache(CACHE_KEYS.STATS, statsData)
-
-        // Generate monthly data from the already-fetched transactions
-        await generateMonthlyDataFromTransactions(transactions)
-
-        // Generate cash flow projection from the same transactions (no extra query)
-        await generateCashFlowProjection(balance, currentRevenue, currentExpenses, transactions)
-      } catch (error: any) {
-        console.error('Error fetching transaction stats:', error)
-        setStats((prev) => ({
-          ...prev,
-          loading: false,
-          error: error.message || 'Failed to load statistics',
-        }))
+      const statsData: TransactionStats = {
+        currentBalance: balance,
+        totalRevenue: currentRevenue,
+        totalExpenses: currentExpenses,
+        monthlySavings: currentRevenue - currentExpenses,
+        monthlyGrowth: Number(growth.toFixed(1)),
       }
-    }
 
-    fetchStats()
-  }, [user?.id])
+      // Generate monthly data from the already-fetched transactions
+      const monthlyData = generateMonthlyDataFromTransactions(transactions)
 
-  // OPTIMIZED: Process monthly data from already-fetched transactions (no additional queries)
-  const generateMonthlyDataFromTransactions = async (transactions: TransactionData[]) => {
+      // Generate cash flow projection from the same transactions (no extra query)
+      const cashFlowProjection = await generateCashFlowProjection(balance, currentRevenue, currentExpenses, transactions)
+
+      return {
+        stats: statsData,
+        monthlyData,
+        cashFlowProjection,
+        daysUntilZero: calculateDaysUntilZero(statsData),
+      }
+    },
+    enabled: !!user?.id,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  })
+
+  // Helper functions moved inside (or could be outside if pure)
+
+  const generateMonthlyDataFromTransactions = (transactions: TransactionData[]): MonthlyData[] => {
     try {
       const now = new Date()
       const months: MonthlyData[] = []
@@ -250,14 +161,13 @@ export function useTransactionStats() {
         })
       }
 
-      setMonthlyData(months)
-      saveToCache(CACHE_KEYS.MONTHLY_DATA, months)
+      return months
     } catch (error: any) {
       console.error('Error generating monthly data:', error)
+      return []
     }
   }
 
-  // Helper functions for advanced projection (defined before use)
   const calculateDailyBalances = (transactions: TransactionData[]) => {
     const dailyMap = new Map<string, number>()
 
@@ -378,7 +288,7 @@ export function useTransactionStats() {
     monthlyRevenue: number,
     monthlyExpenses: number
   ) => {
-    console.log('[Fallback] Using simple projection')
+    // console.log('[Fallback] Using simple projection')
     const dailyNet = (monthlyRevenue - monthlyExpenses) / 30
     const projection: CashFlowProjection[] = []
     let balance = currentBalance
@@ -389,15 +299,14 @@ export function useTransactionStats() {
       balance = balance * (1 + (Math.random() - 0.5) * 0.06)
     }
 
-    setCashFlowProjection(projection)
-    saveToCache(CACHE_KEYS.PROJECTION, projection)
+    return projection
   }
 
   const generateCashFlowProjection = async (
     currentBalance: number,
     monthlyRevenue: number,
     monthlyExpenses: number,
-    allTransactions: TransactionData[] // OPTIMIZED: Receive transactions instead of fetching again
+    allTransactions: TransactionData[]
   ) => {
     try {
       // Filter for last 6 months only (for ML projection)
@@ -412,9 +321,8 @@ export function useTransactionStats() {
 
       // If no historical data, use simple projection
       if (transactions.length < 10) {
-        console.log('[Projection] Insufficient data, using simple projection')
-        generateSimpleProjection(currentBalance, monthlyRevenue, monthlyExpenses)
-        return
+        // console.log('[Projection] Insufficient data, using simple projection')
+        return generateSimpleProjection(currentBalance, monthlyRevenue, monthlyExpenses)
       }
 
       // 1. LINEAR REGRESSION - Calculate trend from historical data
@@ -469,24 +377,15 @@ export function useTransactionStats() {
         })
       }
 
-      console.log('[Advanced ML Projection] Generated with:', {
-        dataPoints: transactions.length,
-        trend: trend.slope > 0 ? 'positive' : 'negative',
-        emaPoints: dailyBalances.length,
-        recurringPatterns: recurringPatterns.length,
-        seasonalVariance: Math.max(...seasonalityFactors) - Math.min(...seasonalityFactors)
-      })
-
-      setCashFlowProjection(projection)
-      saveToCache(CACHE_KEYS.PROJECTION, projection)
+      return projection
     } catch (error: any) {
       console.error('Error generating advanced projection:', error)
       // Fallback to simple projection
-      generateSimpleProjection(currentBalance, monthlyRevenue, monthlyExpenses)
+      return generateSimpleProjection(currentBalance, monthlyRevenue, monthlyExpenses)
     }
   }
 
-  const calculateDaysUntilZero = (): number => {
+  const calculateDaysUntilZero = (stats: TransactionStats): number => {
     if (stats.currentBalance <= 0) return 0
     if (stats.monthlySavings >= 0) return 999 // Positive cash flow, won't reach zero
 
@@ -497,9 +396,17 @@ export function useTransactionStats() {
   }
 
   return {
-    stats,
-    monthlyData,
-    cashFlowProjection,
-    daysUntilZero: calculateDaysUntilZero(),
+    stats: data?.stats || {
+      currentBalance: 0,
+      totalRevenue: 0,
+      totalExpenses: 0,
+      monthlySavings: 0,
+      monthlyGrowth: 0,
+    },
+    monthlyData: data?.monthlyData || [],
+    cashFlowProjection: data?.cashFlowProjection || [],
+    daysUntilZero: data?.daysUntilZero || 0,
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
   }
 }

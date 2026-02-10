@@ -39,6 +39,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { KPISkeleton, ChartSkeleton, TransactionsSkeleton, GoalsSkeleton } from "@/components/DashboardSkeleton";
+import { CashFlowChart } from "@/components/CashFlowChart";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -493,17 +494,15 @@ const Dashboard = () => {
                */}
 
               {/* Bank Connection Button - icon only on mobile - REMOVED for CFO Mode */}
-              {/* 
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate('/bank-connections')}
+                onClick={() => navigate('/import')}
                 className="flex items-center gap-2 px-2 md:px-4"
               >
-                <Building2 className="w-4 h-4" />
-                <span className="hidden md:inline">Conectar Banco</span>
+                <Upload className="w-4 h-4" />
+                <span className="hidden md:inline">Importar</span>
               </Button>
-               */}
 
               {/* Alerts Center */}
               <AlertsCenter />
@@ -1015,6 +1014,16 @@ const Dashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </div>
+
+
+
+          {/* Fluxo de Caixa Previsionado (CFO Mode) */}
+          <div className="mb-6">
+            <CashFlowChart
+              data={cashFlowProjection}
+              runwayDays={daysUntilZero}
+            />
           </div>
 
           {/* Receitas vs Despesas + Transações - Design Premium */}
