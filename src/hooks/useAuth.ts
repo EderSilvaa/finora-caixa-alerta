@@ -67,6 +67,7 @@ export function useAuth() {
   const login = async (data: LoginInput) => {
     try {
       setLoading(true)
+      console.log('useAuth: Starting login process')
       await authService.login(data)
 
       toast({
@@ -76,8 +77,27 @@ export function useAuth() {
 
       navigate('/dashboard')
     } catch (error: any) {
+      console.error('useAuth: Login failed', error)
       toast({
         title: 'Erro ao fazer login',
+        description: error.message || 'Verifique suas credenciais e tente novamente.',
+        variant: 'destructive',
+      })
+      throw error
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loginWithGoogle = async () => {
+    try {
+      setLoading(true)
+      await authService.loginWithGoogle()
+      // Redirect happens automatically via OAuth
+    } catch (error: any) {
+      console.error('useAuth: Google login failed', error)
+      toast({
+        title: 'Erro ao conectar com Google',
         description: error.message,
         variant: 'destructive',
       })
@@ -115,6 +135,7 @@ export function useAuth() {
     loading,
     signup,
     login,
+    loginWithGoogle,
     logout,
     isAuthenticated: !!user,
   }

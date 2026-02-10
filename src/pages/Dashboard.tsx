@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useTransactionStats } from "@/hooks/useTransactionStats";
 import { useTransactions } from "@/hooks/useTransactions";
-import { useAutoSync } from "@/hooks/useAutoSync";
+// import { useAutoSync } from "@/hooks/useAutoSync";
 import { useAI } from "@/hooks/useAI";
 import { useEffect } from "react";
 import { ActionPlan, type ActionItem } from "@/components/ActionPlan";
@@ -49,11 +49,11 @@ const Dashboard = () => {
 
   // Fetch real data from Supabase
   const { stats, monthlyData, cashFlowProjection, daysUntilZero } = useTransactionStats();
-  const { transactions, loading: transactionsLoading, addTransaction } = useTransactions();
+  const { transactions, isLoading: transactionsLoading, createTransaction: addTransaction } = useTransactions(user?.id);
   const { goals, refreshGoals } = useSmartGoals();
 
-  // Auto-sync functionality
-  const { syncStatus, manualSync, getLastSyncText } = useAutoSync();
+  // Auto-sync functionality REMOVED for CFO Mode
+  // const { syncStatus, manualSync, getLastSyncText } = useAutoSync();
 
   // AI Features
   const {
@@ -70,14 +70,11 @@ const Dashboard = () => {
   } = useAI();
 
   // Show toast when auto-sync starts and completes
+  /*
   useEffect(() => {
-    if (syncStatus.isSyncing) {
-      toast({
-        title: "Sincronizando transações",
-        description: "Buscando novas transações dos seus bancos conectados...",
-      });
-    }
-  }, [syncStatus.isSyncing]);
+    // Sync logic removed
+  }, []);
+  */
 
   // Fetch user avatar
   useEffect(() => {
@@ -483,17 +480,20 @@ const Dashboard = () => {
                 <span className="text-sm text-muted-foreground">Últimos {analyzedPeriod} dias</span>
               </div>
 
-              {/* Last Sync Indicator - icon only on mobile */}
-              {syncStatus.lastSyncAt && (
+              {/* Last Sync Indicator - icon only on mobile - REMOVED for CFO Mode */}
+              {/* 
+              {syncStatus?.lastSyncAt && (
                 <div className="flex items-center gap-2 px-2 md:px-4 py-2 rounded-lg bg-primary/10 border border-primary/30">
-                  <RefreshCw className={`w-4 h-4 text-primary ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 text-primary ${syncStatus?.isSyncing ? 'animate-spin' : ''}`} />
                   <span className="text-sm text-primary hidden md:inline">
                     Sync: {getLastSyncText()}
                   </span>
                 </div>
               )}
+               */}
 
-              {/* Bank Connection Button - icon only on mobile */}
+              {/* Bank Connection Button - icon only on mobile - REMOVED for CFO Mode */}
+              {/* 
               <Button
                 variant="outline"
                 size="sm"
@@ -503,6 +503,7 @@ const Dashboard = () => {
                 <Building2 className="w-4 h-4" />
                 <span className="hidden md:inline">Conectar Banco</span>
               </Button>
+               */}
 
               {/* Alerts Center */}
               <AlertsCenter />
@@ -579,133 +580,133 @@ const Dashboard = () => {
             )}
             {(!stats.loading || currentBalance !== 0 || totalRevenue !== 0 || totalExpenses !== 0) && (
               <>
-            {/* Saldo Atual - Design Premium */}
-            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-xl shadow-2xl hover:shadow-primary/20 transition-all duration-300 hover:-translate-y-1 group">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardHeader className="pb-2 relative">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Saldo Atual</CardTitle>
-                    <div className="text-3xl font-bold text-foreground">
-                      R$ {currentBalance.toLocaleString('pt-BR')}
+                {/* Saldo Atual - Design Premium */}
+                <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-xl shadow-2xl hover:shadow-primary/20 transition-all duration-300 hover:-translate-y-1 group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <CardHeader className="pb-2 relative">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Saldo Atual</CardTitle>
+                        <div className="text-3xl font-bold text-foreground">
+                          R$ {currentBalance.toLocaleString('pt-BR')}
+                        </div>
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                        <DollarSign className="w-6 h-6 text-primary" />
+                      </div>
                     </div>
-                  </div>
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                    <DollarSign className="w-6 h-6 text-primary" />
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
+                  </CardHeader>
+                </Card>
 
-            {/* Receita Mensal - Design Premium */}
-            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-success/10 via-card/90 to-card/70 backdrop-blur-xl shadow-2xl hover:shadow-success/20 transition-all duration-300 hover:-translate-y-1 group">
-              <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardHeader className="pb-2 relative">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Receita Mensal</CardTitle>
-                    <div className="text-3xl font-bold text-success">
-                      R$ {totalRevenue.toLocaleString('pt-BR')}
+                {/* Receita Mensal - Design Premium */}
+                <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-success/10 via-card/90 to-card/70 backdrop-blur-xl shadow-2xl hover:shadow-success/20 transition-all duration-300 hover:-translate-y-1 group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <CardHeader className="pb-2 relative">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Receita Mensal</CardTitle>
+                        <div className="text-3xl font-bold text-success">
+                          R$ {totalRevenue.toLocaleString('pt-BR')}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-success font-medium">
+                          <ArrowUpRight className="w-3 h-3" />
+                          +{monthlyGrowth}% vs mês anterior
+                        </div>
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-success/20 to-success/10 flex items-center justify-center">
+                        <TrendingUp className="w-6 h-6 text-success" />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-success font-medium">
-                      <ArrowUpRight className="w-3 h-3" />
-                      +{monthlyGrowth}% vs mês anterior
-                    </div>
-                  </div>
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-success/20 to-success/10 flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 text-success" />
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
+                  </CardHeader>
+                </Card>
 
-            {/* Despesas Mensais - Design Premium */}
-            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-warning/10 via-card/90 to-card/70 backdrop-blur-xl shadow-2xl hover:shadow-warning/20 transition-all duration-300 hover:-translate-y-1 group">
-              <div className="absolute inset-0 bg-gradient-to-br from-warning/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardHeader className="pb-2 relative">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Despesas Mensais</CardTitle>
-                    <div className="text-3xl font-bold text-warning">
-                      R$ {totalExpenses.toLocaleString('pt-BR')}
+                {/* Despesas Mensais - Design Premium */}
+                <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-warning/10 via-card/90 to-card/70 backdrop-blur-xl shadow-2xl hover:shadow-warning/20 transition-all duration-300 hover:-translate-y-1 group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-warning/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <CardHeader className="pb-2 relative">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Despesas Mensais</CardTitle>
+                        <div className="text-3xl font-bold text-warning">
+                          R$ {totalExpenses.toLocaleString('pt-BR')}
+                        </div>
+                        <div className="text-xs text-muted-foreground font-medium">
+                          {((totalExpenses / totalRevenue) * 100).toFixed(0)}% da receita
+                        </div>
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-warning/20 to-warning/10 flex items-center justify-center">
+                        <TrendingDown className="w-6 h-6 text-warning" />
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground font-medium">
-                      {((totalExpenses/totalRevenue)*100).toFixed(0)}% da receita
-                    </div>
-                  </div>
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-warning/20 to-warning/10 flex items-center justify-center">
-                    <TrendingDown className="w-6 h-6 text-warning" />
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
+                  </CardHeader>
+                </Card>
 
-            {/* Economia - Design Premium */}
-            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-primary/10 via-card/90 to-card/70 backdrop-blur-xl shadow-2xl hover:shadow-primary/20 transition-all duration-300 hover:-translate-y-1 group">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardHeader className="pb-2 relative">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Economia</CardTitle>
-                    <div className="text-3xl font-bold text-primary">
-                      R$ {monthlySavings.toLocaleString('pt-BR')}
+                {/* Economia - Design Premium */}
+                <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-primary/10 via-card/90 to-card/70 backdrop-blur-xl shadow-2xl hover:shadow-primary/20 transition-all duration-300 hover:-translate-y-1 group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <CardHeader className="pb-2 relative">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Economia</CardTitle>
+                        <div className="text-3xl font-bold text-primary">
+                          R$ {monthlySavings.toLocaleString('pt-BR')}
+                        </div>
+                        <div className="text-xs text-muted-foreground font-medium">
+                          Este mês
+                        </div>
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                        <Target className="w-6 h-6 text-primary" />
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground font-medium">
-                      Este mês
-                    </div>
-                  </div>
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                    <Target className="w-6 h-6 text-primary" />
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
+                  </CardHeader>
+                </Card>
 
-            {/* Alerta de Caixa - Design Premium */}
-            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-destructive/10 via-card/90 to-card/70 backdrop-blur-xl shadow-2xl hover:shadow-destructive/20 transition-all duration-300 hover:-translate-y-1 group">
-              <div className="absolute inset-0 bg-gradient-to-br from-destructive/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardHeader className="pb-2 relative">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Alerta de Caixa</CardTitle>
-                    <div className="text-3xl font-bold text-destructive">
-                      {daysUntilZero} dias
+                {/* Alerta de Caixa - Design Premium */}
+                <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-destructive/10 via-card/90 to-card/70 backdrop-blur-xl shadow-2xl hover:shadow-destructive/20 transition-all duration-300 hover:-translate-y-1 group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-destructive/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <CardHeader className="pb-2 relative">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Alerta de Caixa</CardTitle>
+                        <div className="text-3xl font-bold text-destructive">
+                          {daysUntilZero} dias
+                        </div>
+                        <div className="text-xs text-destructive font-medium">
+                          Até zerar
+                        </div>
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-destructive/20 to-destructive/10 flex items-center justify-center animate-pulse">
+                        <AlertTriangle className="w-6 h-6 text-destructive" />
+                      </div>
                     </div>
-                    <div className="text-xs text-destructive font-medium">
-                      Até zerar
-                    </div>
-                  </div>
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-destructive/20 to-destructive/10 flex items-center justify-center animate-pulse">
-                    <AlertTriangle className="w-6 h-6 text-destructive" />
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
+                  </CardHeader>
+                </Card>
 
-            {/* Impostos - FINORA TAX */}
-            <Card
-              className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-500/10 via-card/90 to-card/70 backdrop-blur-xl shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:-translate-y-1 group cursor-pointer"
-              onClick={() => navigate('/dashboard/taxes')}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardHeader className="pb-2 relative">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Impostos</CardTitle>
-                    <div className="text-2xl font-bold text-blue-600">
-                      FINORA TAX
+                {/* Impostos - FINORA TAX */}
+                <Card
+                  className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-500/10 via-card/90 to-card/70 backdrop-blur-xl shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:-translate-y-1 group cursor-pointer"
+                  onClick={() => navigate('/dashboard/taxes')}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <CardHeader className="pb-2 relative">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Impostos</CardTitle>
+                        <div className="text-2xl font-bold text-blue-600">
+                          FINORA TAX
+                        </div>
+                        <div className="text-xs text-blue-600 font-medium flex items-center gap-1">
+                          Calcular impostos
+                          <ArrowRight className="w-3 h-3" />
+                        </div>
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/10 flex items-center justify-center">
+                        <PieChart className="w-6 h-6 text-blue-600" />
+                      </div>
                     </div>
-                    <div className="text-xs text-blue-600 font-medium flex items-center gap-1">
-                      Calcular impostos
-                      <ArrowRight className="w-3 h-3" />
-                    </div>
-                  </div>
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/10 flex items-center justify-center">
-                    <PieChart className="w-6 h-6 text-blue-600" />
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
+                  </CardHeader>
+                </Card>
               </>
             )}
           </div>
@@ -740,140 +741,140 @@ const Dashboard = () => {
               </div>
             )}
             {(!stats.loading || cashFlowProjection.length > 0) && (
-            <Card className="lg:col-span-2 border-0 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl shadow-2xl">
-              <CardHeader className="pb-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                      <Activity className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg font-bold text-foreground">Projeção de Caixa</CardTitle>
-                      <CardDescription className="text-xs">Análise preditiva de {projectionDays} dias</CardDescription>
+              <Card className="lg:col-span-2 border-0 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl shadow-2xl">
+                <CardHeader className="pb-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                        <Activity className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg font-bold text-foreground">Projeção de Caixa</CardTitle>
+                        <CardDescription className="text-xs">Análise preditiva de {projectionDays} dias</CardDescription>
+                      </div>
                     </div>
                   </div>
-                </div>
-                {/* Period Selection Buttons */}
-                <div className="flex gap-2">
-                  <Button
-                    variant={projectionDays === 30 ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setProjectionDays(30)}
-                    className="flex-1 text-xs"
-                  >
-                    30 dias
-                  </Button>
-                  <Button
-                    variant={projectionDays === 60 ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setProjectionDays(60)}
-                    className="flex-1 text-xs"
-                  >
-                    60 dias
-                  </Button>
-                  <Button
-                    variant={projectionDays === 120 ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setProjectionDays(120)}
-                    className="flex-1 text-xs"
-                  >
-                    120 dias
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-[320px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={cashFlowData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                  {/* Period Selection Buttons */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant={projectionDays === 30 ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setProjectionDays(30)}
+                      className="flex-1 text-xs"
                     >
-                      <defs>
-                        <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={1} />
-                          <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={1} />
-                        </linearGradient>
-                        <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
-                          <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.05} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke="hsl(var(--border))"
-                        opacity={0.15}
-                        vertical={false}
-                      />
-                      <XAxis
-                        dataKey="day"
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={11}
-                        tickLine={false}
-                        axisLine={{ stroke: 'hsl(var(--border))', opacity: 0.3 }}
-                        label={{ value: 'Dias', position: 'insideBottom', offset: -10, fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                        interval={projectionDays === 30 ? 4 : projectionDays === 60 ? 9 : 14}
-                      />
-                      <YAxis
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={11}
-                        tickLine={false}
-                        axisLine={{ stroke: 'hsl(var(--border))', opacity: 0.3 }}
-                        label={{ value: 'Saldo (R$)', angle: -90, position: 'insideLeft', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                        tickFormatter={(value) => {
-                          if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-                          if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
-                          return value.toString();
-                        }}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--popover))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '12px',
-                          padding: '12px',
-                          boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-                          backdropFilter: 'blur(8px)'
-                        }}
-                        formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR')}`, 'Saldo']}
-                        labelFormatter={(label) => `Dia ${label}`}
-                      />
-                      <ReferenceLine
-                        y={0}
-                        stroke="hsl(var(--destructive))"
-                        strokeDasharray="5 5"
-                        strokeWidth={2}
-                        label={{ value: 'Limite Crítico', position: 'right', fill: 'hsl(var(--destructive))', fontSize: 10 }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="balance"
-                        stroke="url(#lineGradient)"
-                        strokeWidth={2.5}
-                        dot={false}
-                        activeDot={{ r: 7, fill: 'hsl(var(--primary))', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+                      30 dias
+                    </Button>
+                    <Button
+                      variant={projectionDays === 60 ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setProjectionDays(60)}
+                      className="flex-1 text-xs"
+                    >
+                      60 dias
+                    </Button>
+                    <Button
+                      variant={projectionDays === 120 ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setProjectionDays(120)}
+                      className="flex-1 text-xs"
+                    >
+                      120 dias
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="h-[320px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={cashFlowData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                      >
+                        <defs>
+                          <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={1} />
+                            <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={1} />
+                          </linearGradient>
+                          <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
+                            <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.05} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="hsl(var(--border))"
+                          opacity={0.15}
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="day"
+                          stroke="hsl(var(--muted-foreground))"
+                          fontSize={11}
+                          tickLine={false}
+                          axisLine={{ stroke: 'hsl(var(--border))', opacity: 0.3 }}
+                          label={{ value: 'Dias', position: 'insideBottom', offset: -10, fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                          interval={projectionDays === 30 ? 4 : projectionDays === 60 ? 9 : 14}
+                        />
+                        <YAxis
+                          stroke="hsl(var(--muted-foreground))"
+                          fontSize={11}
+                          tickLine={false}
+                          axisLine={{ stroke: 'hsl(var(--border))', opacity: 0.3 }}
+                          label={{ value: 'Saldo (R$)', angle: -90, position: 'insideLeft', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                          tickFormatter={(value) => {
+                            if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+                            if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+                            return value.toString();
+                          }}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--popover))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '12px',
+                            padding: '12px',
+                            boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+                            backdropFilter: 'blur(8px)'
+                          }}
+                          formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR')}`, 'Saldo']}
+                          labelFormatter={(label) => `Dia ${label}`}
+                        />
+                        <ReferenceLine
+                          y={0}
+                          stroke="hsl(var(--destructive))"
+                          strokeDasharray="5 5"
+                          strokeWidth={2}
+                          label={{ value: 'Limite Crítico', position: 'right', fill: 'hsl(var(--destructive))', fontSize: 10 }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="balance"
+                          stroke="url(#lineGradient)"
+                          strokeWidth={2.5}
+                          dot={false}
+                          activeDot={{ r: 7, fill: 'hsl(var(--primary))', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
 
-                {/* Alerta Premium */}
-                <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-destructive/10 to-warning/10 border border-destructive/30 backdrop-blur-sm">
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-destructive/20 flex items-center justify-center flex-shrink-0">
-                      <AlertTriangle className="w-5 h-5 text-destructive" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-sm font-bold text-destructive mb-1">
-                        Atenção: Fluxo de caixa em risco
-                      </h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Com o padrão atual de receitas e despesas, seu saldo zerrará em <span className="font-bold text-destructive">{daysUntilZero} dias</span>. Recomendamos antecipar recebíveis ou reduzir despesas variáveis.
-                      </p>
+                  {/* Alerta Premium */}
+                  <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-destructive/10 to-warning/10 border border-destructive/30 backdrop-blur-sm">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-destructive/20 flex items-center justify-center flex-shrink-0">
+                        <AlertTriangle className="w-5 h-5 text-destructive" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-sm font-bold text-destructive mb-1">
+                          Atenção: Fluxo de caixa em risco
+                        </h3>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Com o padrão atual de receitas e despesas, seu saldo zerrará em <span className="font-bold text-destructive">{daysUntilZero} dias</span>. Recomendamos antecipar recebíveis ou reduzir despesas variáveis.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
             )}
 
             {/* Insights IA - Design Premium */}
@@ -1060,7 +1061,7 @@ const Dashboard = () => {
                         fontSize={11}
                         tickLine={false}
                         axisLine={{ stroke: 'hsl(var(--border))', opacity: 0.3 }}
-                        tickFormatter={(value) => `R$ ${value/1000}k`}
+                        tickFormatter={(value) => `R$ ${value / 1000}k`}
                       />
                       <Tooltip
                         contentStyle={{
@@ -1094,29 +1095,7 @@ const Dashboard = () => {
                       <CardDescription className="text-xs">Atividade recente</CardDescription>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 hover:bg-primary/10"
-                    disabled={syncStatus.isSyncing}
-                    onClick={async () => {
-                      try {
-                        await manualSync();
-                        toast({
-                          title: "Sincronizado!",
-                          description: "Transações atualizadas com sucesso",
-                        });
-                      } catch (error: any) {
-                        toast({
-                          title: "Erro ao sincronizar",
-                          description: error.message,
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                  >
-                    <RefreshCw className={`w-4 h-4 ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
-                  </Button>
+                  {/* Sync button removed */}
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -1145,11 +1124,10 @@ const Dashboard = () => {
                         key={transaction.id}
                         className="flex items-center gap-3 p-3 rounded-xl hover:bg-background/60 transition-all border border-transparent hover:border-primary/20 cursor-pointer group"
                       >
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                          transaction.type === 'income'
-                            ? 'bg-success/20 group-hover:bg-success/30'
-                            : 'bg-destructive/20 group-hover:bg-destructive/30'
-                        } transition-colors`}>
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${transaction.type === 'income'
+                          ? 'bg-success/20 group-hover:bg-success/30'
+                          : 'bg-destructive/20 group-hover:bg-destructive/30'
+                          } transition-colors`}>
                           {transaction.type === 'income' ? (
                             <ArrowUpRight className="w-5 h-5 text-success" />
                           ) : (
@@ -1161,7 +1139,7 @@ const Dashboard = () => {
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs text-muted-foreground">{dateText}</span>
                             <span className="text-xs px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground capitalize">{transaction.category}</span>
-                            {transaction.synced_from_bank && (
+                            {(transaction as any).synced_from_bank && (
                               <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">Banco</span>
                             )}
                           </div>
@@ -1345,27 +1323,24 @@ const Dashboard = () => {
                     const Icon = getInsightIcon(insight.category);
 
                     return (
-                      <Card key={index} className={`border-l-4 transition-all hover:shadow-lg ${
-                        insightType === 'success' ? 'border-l-success bg-success/5 hover:bg-success/10' :
+                      <Card key={index} className={`border-l-4 transition-all hover:shadow-lg ${insightType === 'success' ? 'border-l-success bg-success/5 hover:bg-success/10' :
                         insightType === 'warning' ? 'border-l-warning bg-warning/5 hover:bg-warning/10' :
-                        insightType === 'danger' ? 'border-l-destructive bg-destructive/5 hover:bg-destructive/10' :
-                        'border-l-primary bg-primary/5 hover:bg-primary/10'
-                      }`}>
+                          insightType === 'danger' ? 'border-l-destructive bg-destructive/5 hover:bg-destructive/10' :
+                            'border-l-primary bg-primary/5 hover:bg-primary/10'
+                        }`}>
                         <CardHeader className="pb-3">
                           <CardTitle className="text-base flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                insightType === 'success' ? 'bg-success/20' :
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${insightType === 'success' ? 'bg-success/20' :
                                 insightType === 'warning' ? 'bg-warning/20' :
-                                insightType === 'danger' ? 'bg-destructive/20' :
-                                'bg-primary/20'
-                              }`}>
-                                <Icon className={`w-5 h-5 ${
-                                  insightType === 'success' ? 'text-success' :
+                                  insightType === 'danger' ? 'bg-destructive/20' :
+                                    'bg-primary/20'
+                                }`}>
+                                <Icon className={`w-5 h-5 ${insightType === 'success' ? 'text-success' :
                                   insightType === 'warning' ? 'text-warning' :
-                                  insightType === 'danger' ? 'text-destructive' :
-                                  'text-primary'
-                                }`} />
+                                    insightType === 'danger' ? 'text-destructive' :
+                                      'text-primary'
+                                  }`} />
                               </div>
                               <span>{insight.title}</span>
                             </div>
@@ -1457,11 +1432,10 @@ const Dashboard = () => {
                           <p className="text-sm text-foreground">{anomaly.reason}</p>
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">Severidade:</span>
-                            <span className={`text-xs font-semibold ${
-                              anomaly.severity === 'high' ? 'text-destructive' :
+                            <span className={`text-xs font-semibold ${anomaly.severity === 'high' ? 'text-destructive' :
                               anomaly.severity === 'medium' ? 'text-warning' :
-                              'text-success'
-                            }`}>
+                                'text-success'
+                              }`}>
                               {anomaly.severity === 'high' ? 'Alta' : anomaly.severity === 'medium' ? 'Média' : 'Baixa'}
                             </span>
                           </div>
@@ -1492,11 +1466,10 @@ const Dashboard = () => {
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-muted-foreground">Tendência</span>
-                            <span className={`text-sm font-semibold flex items-center gap-1 ${
-                              pattern.trend === 'increasing' ? 'text-destructive' :
+                            <span className={`text-sm font-semibold flex items-center gap-1 ${pattern.trend === 'increasing' ? 'text-destructive' :
                               pattern.trend === 'decreasing' ? 'text-success' :
-                              'text-muted-foreground'
-                            }`}>
+                                'text-muted-foreground'
+                              }`}>
                               {pattern.trend === 'increasing' && <ArrowUpRight className="w-3 h-3" />}
                               {pattern.trend === 'decreasing' && <TrendingDown className="w-3 h-3" />}
                               {pattern.trend === 'increasing' ? 'Aumentando' : pattern.trend === 'decreasing' ? 'Diminuindo' : 'Estável'}

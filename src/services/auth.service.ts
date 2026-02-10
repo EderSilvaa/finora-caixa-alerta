@@ -25,7 +25,7 @@ export const authService = {
         .update({
           full_name: fullName,
           company_name: companyName,
-        })
+        } as any)
         .eq('id', authData.user.id)
 
       if (profileError) console.error('Profile update error:', profileError)
@@ -40,14 +40,38 @@ export const authService = {
   async login(data: LoginInput) {
     const { email, password } = data
 
+    console.log('Attempting login for:', email)
     const { data: authData, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
-    if (error) throw error
+    if (error) {
+      console.error('Login error:', error)
+      throw error
+    }
 
+    console.log('Login successful', authData)
     return authData
+  },
+
+  /**
+   * Login with Google
+   */
+  async loginWithGoogle() {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`
+      }
+    })
+
+    if (error) {
+      console.error('Google login error:', error)
+      throw error
+    }
+
+    return data
   },
 
   /**
@@ -101,7 +125,7 @@ export const authService = {
         full_name: updates.fullName,
         company_name: updates.companyName,
         phone: updates.phone,
-      })
+      } as any)
       .eq('id', userId)
 
     if (error) throw error

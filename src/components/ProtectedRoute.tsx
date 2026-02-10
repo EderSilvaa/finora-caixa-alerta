@@ -13,6 +13,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   useEffect(() => {
     authService.getSession().then(session => {
       setIsAuthenticated(!!session)
+    }).catch(error => {
+      console.error('Session check failed:', error)
+      setIsAuthenticated(false)
     })
   }, [])
 

@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LoadingFallback } from "@/components/LoadingFallback";
 
 // Lazy load all pages for better performance
@@ -46,18 +47,23 @@ const App = () => (
             <Route path="/" element={<Onboarding />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/login" element={<Login />} />
+            {/* 
             <Route path="/connect" element={<ConnectAccounts />} />
+             */}
             <Route path="/simulator" element={<Simulator />} />
             <Route path="/results" element={<Results />} />
             <Route path="/success" element={<Success />} />
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
+                <ErrorBoundary>
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                </ErrorBoundary>
               }
             />
+            {/* 
             <Route
               path="/bank-connections"
               element={
@@ -66,6 +72,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+             */}
             <Route
               path="/profile"
               element={
