@@ -101,6 +101,14 @@ serve(async (req) => {
           params.monthlyBurn
         )
         break
+      case 'chat':
+        result = await chatWithFinancialContext(
+          supabase,
+          userId,
+          openaiKey,
+          params.messages
+        )
+        break
       default:
         throw new Error(`Unknown action: ${action}`)
     }
@@ -416,12 +424,79 @@ Ações HOJE, números reais, baseado em dados.`
     [
       {
         role: 'system',
-        content: 'Consultor crises financeiras. Gere ações executáveis HOJE. Específico: quem, quanto, quando, como. Zero teoria, só ação.',
+        content: 'Gerente de crise financeira. Foco: aumentar runway, cortar custos imediatos, antecipar receita. Ações cirúrgicas e específicas.',
       },
       { role: 'user', content: prompt },
     ],
-    { temperature: 0.7, max_tokens: 1500 }
+    { temperature: 0.5, max_tokens: 1000 }
   )
 
   return result.actions || []
 }
+
+// Action: Chat with Financial Context
+async function chatWithFinancialContext(
+  supabase: any,
+  userId: string,
+  openaiKey: string,
+  messages: any[]
+) {
+  // 1. Get Financial Context
+  const financialData = await getUserFinancialData(supabase, userId)
+  const summary = preprocessFinancialData(financialData)
+
+  const contextPrompt = `
+CONTEXTO FINANCEIRO DO USUÁRIO (Use para responder):
+- Saldo Atual: R$ ${financialData.currentBalance.toFixed(2)}
+- Receita (90d): R$ ${financialData.income.toFixed(2)}
+- Despesas (90d): R$ ${financialData.expenses.toFixed(2)}
+- Top Categorias de Gastos: ${summary.topCategories}
+- Transações Recentes Altas: ${summary.recentHighValue}
+- Padrão de Gastos: ${summary.categoryBreakdown}
+
+DIRETRIZES:
+- Você é o Finora AI, um consultor financeiro pessoal, empático e prático.
+- Use os dados acima para dar respostas específicas e personalizadas.
+- Se o usuário perguntar "como estou?", analise o saldo e fluxo de caixa.
+- Se perguntar "onde posso economizar?", olhe as categorias mais altas.
+- Seja conciso (max 3 parágrafos). Use markdown para listas ou negrito.
+- Nunca invente dados. Se não souber, diga que não tem essa informação nos últimos 90 dias.
+`
+
+  // 2. Prepare messages for OpenAI
+  // Insert the system prompt with context at the beginning
+  const apiMessages = [
+    {
+      role: 'system',
+      content: contextPrompt
+    },
+    ...messages // Appends user's conversation history
+  ]
+
+  // 3. Call OpenAI
+  const response = await fetch(`${OPENAI_API_BASE}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${openaiKey}`,
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      messages: apiMessages,
+      temperature: 0.7,
+      max_tokens: 500, // Shorter responses for chat
+    }),
+  })
+
+  if (!response.ok) {
+    const error = await response.text()
+    throw new Error(`OpenAI API error: ${response.status} - ${error}`)
+  }
+
+  const data = await response.json()
+  return {
+    role: 'assistant',
+    content: data.choices[0].message.content
+  }
+}
+

@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { KPISkeleton, ChartSkeleton, TransactionsSkeleton, GoalsSkeleton } from "@/components/DashboardSkeleton";
 import { CashFlowChart } from "@/components/CashFlowChart";
+import { AIChat } from "@/components/AIChat";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -876,144 +877,10 @@ const Dashboard = () => {
               </Card>
             )}
 
-            {/* Insights IA - Design Premium */}
-            <Card className="border-0 bg-gradient-to-br from-primary/5 via-card/95 to-secondary/5 backdrop-blur-xl shadow-2xl">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg shadow-primary/30">
-                    <Brain className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base font-bold text-foreground">Insights IA</CardTitle>
-                    <CardDescription className="text-xs">Análise em tempo real</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {/* Last Analysis Date & Refresh */}
-                {lastAnalysisDate && (
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-background/60 backdrop-blur-sm border border-primary/20">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                      <span className="text-xs text-muted-foreground">
-                        Analisado {formatDistanceToNow(new Date(lastAnalysisDate), {
-                          addSuffix: true,
-                          locale: ptBR,
-                        })}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <ExportReport
-                        data={prepareExportData()}
-                        trigger={
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 hover:bg-primary/10"
-                            title="Exportar Relatório"
-                          >
-                            <Download className="w-3 h-3" />
-                          </Button>
-                        }
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 hover:bg-primary/10"
-                        disabled={aiLoading}
-                        onClick={handleAIAnalysis}
-                        title="Atualizar Análise"
-                      >
-                        <RefreshCw className={`w-3 h-3 ${aiLoading ? 'animate-spin' : ''}`} />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  {/* Show AI insights preview if available */}
-                  {isAIConfigured && insights.length > 0 ? (
-                    insights.slice(0, 3).map((insight, index) => {
-                      const insightType = getInsightType(insight.severity);
-                      const Icon = getInsightIcon(insight.category);
-                      const colorClass = insightType === 'danger' ? 'destructive' : insightType === 'warning' ? 'warning' : insightType === 'success' ? 'success' : 'primary';
-
-                      return (
-                        <div key={index} className={`p-4 rounded-xl bg-background/60 backdrop-blur-sm border border-${colorClass}/20 hover:border-${colorClass}/40 transition-colors`}>
-                          <div className="flex items-start gap-3">
-                            <div className={`w-8 h-8 rounded-lg bg-${colorClass}/20 flex items-center justify-center flex-shrink-0`}>
-                              <Icon className={`w-4 h-4 text-${colorClass}`} />
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-xs text-foreground leading-relaxed">
-                                <span className={`font-semibold text-${colorClass}`}>{insight.title}:</span> {insight.description.substring(0, 80)}...
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <>
-                      {/* Default placeholder insights */}
-                      <div className="p-4 rounded-xl bg-background/60 backdrop-blur-sm border border-muted/20">
-                        <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-muted/20 flex items-center justify-center flex-shrink-0">
-                            <Brain className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                              {!isAIConfigured
-                                ? 'Configure a API do OpenAI para ver insights personalizados'
-                                : 'Clique em "Ver Análise Completa" para gerar insights de IA'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="p-4 rounded-xl bg-background/60 backdrop-blur-sm border border-success/20 hover:border-success/40 transition-colors">
-                        <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-success/20 flex items-center justify-center flex-shrink-0">
-                            <TrendingUp className="w-4 h-4 text-success" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-xs text-foreground leading-relaxed">
-                              <span className="font-semibold text-success">Positivo:</span> Receita cresceu {monthlyGrowth}% nas últimas 2 semanas.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Botão inteligente: se já tem dados, apenas abre. Se não tem, gera */}
-                {insights.length > 0 || balancePrediction || anomalies.length > 0 || spendingPatterns.length > 0 ? (
-                  <Button
-                    variant="gradient"
-                    size="sm"
-                    className="w-full mt-4 shadow-lg hover:shadow-xl transition-all"
-                    onClick={handleOpenAnalysisModal}
-                  >
-                    <Brain className="w-4 h-4 mr-2" />
-                    Ver Análise Completa
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                ) : (
-                  <Button
-                    variant="gradient"
-                    size="sm"
-                    className="w-full mt-4 shadow-lg hover:shadow-xl transition-all"
-                    onClick={handleAIAnalysis}
-                    disabled={aiLoading}
-                  >
-                    <Brain className="w-4 h-4 mr-2" />
-                    {aiLoading ? 'Analisando...' : 'Gerar Análise'}
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
+            {/* AIChat - Substitui Insights IA */}
+            <div className="h-full">
+              <AIChat />
+            </div>
           </div>
 
 

@@ -169,11 +169,11 @@ export const aiService = {
 
     // Get transactions
     const { data: transactions, error: txError } = await supabase
-      .from('transactions')
+      .from('transactions' as any)
       .select('*')
       .eq('user_id', userId)
       .gte('date', threeMonthsAgo.toISOString())
-      .order('date', { ascending: false })
+      .order('date', { ascending: false }) as { data: any[] | null, error: any }
 
     if (txError) throw txError
 
@@ -184,9 +184,9 @@ export const aiService = {
 
     // Get bank accounts
     const { data: bankAccounts } = await supabase
-      .from('bank_accounts')
+      .from('bank_accounts' as any)
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', userId) as { data: any[] | null, error: any }
 
     const totalBankBalance = bankAccounts?.reduce((sum, acc) => sum + Number(acc.balance), 0) || 0
 
@@ -364,16 +364,16 @@ Analise JSON:
     try {
       const insightsToSave = insights.map(insight => ({
         user_id: userId,
-        insight_type: insight.type,
+        insight_type: (insight as any).type,
         title: insight.title,
         description: insight.description,
-        action: insight.action,
+        action: (insight as any).action,
         is_read: false
       }))
 
       const { error } = await supabase
-        .from('ai_insights')
-        .insert(insightsToSave)
+        .from('ai_insights' as any)
+        .insert(insightsToSave as any)
 
       if (error) {
         console.log('[AI] Note: ai_insights table not available (using new system instead)')
@@ -511,7 +511,7 @@ Ações HOJE, números reais, baseado em dados.`
 
       // Format anomalies
       const formattedAnomalies = data.anomalies.map(a => ({
-        description: a.description,
+        description: a.transaction_description,
         amount: a.amount,
         date: a.date,
         reason: a.reason,
@@ -528,7 +528,7 @@ Ações HOJE, números reais, baseado em dados.`
 
       // Insert into database
       const { data: result, error } = await supabase
-        .from('ai_analysis_results')
+        .from('ai_analysis_results' as any)
         .insert({
           user_id: userId,
           status: 'completed',
@@ -542,21 +542,23 @@ Ações HOJE, números reais, baseado em dados.`
           spending_patterns: formattedPatterns,
           transaction_count: data.transactionCount,
           analysis_date: new Date().toISOString()
-        })
+        } as any)
         .select()
-        .single()
+        .single() as { data: any | null, error: any }
 
       if (error) {
         console.error('[AI] Error saving to database:', error)
         return { success: false, error: error.message }
       }
 
-      console.log('[AI] Analysis saved successfully:', result.id)
+      console.log('[AI] Analysis saved successfully:', result?.id)
 
       // Create alerts for critical issues
-      await this.createAlertsFromAnalysis(userId, result.id, data)
+      if (result?.id) {
+        await this.createAlertsFromAnalysis(userId, result.id, data)
+      }
 
-      return { success: true, analysisId: result.id }
+      return { success: true, analysisId: result?.id }
     } catch (error: any) {
       console.error('[AI] Error in saveAnalysisToDatabase:', error)
       return { success: false, error: error.message }
@@ -599,7 +601,7 @@ Ações HOJE, números reais, baseado em dados.`
           analysis_id: analysisId,
           type: 'warning',
           title: 'Anomalia Detectada',
-          message: `${anomaly.description} - ${anomaly.reason}`,
+          message: `${anomaly.transaction_description} - ${anomaly.reason}`,
           action_required: true
         })
       }
@@ -618,8 +620,8 @@ Ações HOJE, números reais, baseado em dados.`
 
       if (alerts.length > 0) {
         const { error } = await supabase
-          .from('ai_alerts')
-          .insert(alerts)
+          .from('ai_alerts' as any)
+          .insert(alerts as any)
 
         if (error) {
           console.error('[AI] Error creating alerts:', error)
@@ -629,6 +631,30 @@ Ações HOJE, números reais, baseado em dados.`
       }
     } catch (error) {
       console.error('[AI] Error in createAlertsFromAnalysis:', error)
+    }
+  },
+
+  /**
+   * Chat with Finora AI
+   */
+  async chat(userId: string, messages: any[]): Promise<{ role: string, content: string }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-insights', {
+        body: {
+          action: 'chat',
+          userId,
+          messages
+        },
+      })
+
+      if (error) {
+        throw new Error(error.message || 'Edge Function error')
+      }
+
+      return data
+    } catch (error: any) {
+      console.error('[AI] Error in chat:', error)
+      throw new Error(`Failed to chat: ${error.message}`)
     }
   }
 }
