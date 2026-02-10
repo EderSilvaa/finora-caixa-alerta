@@ -8,7 +8,20 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Brain, TrendingDown, Calendar, AlertTriangle, TrendingUp, ArrowUpRight, ArrowDownRight, DollarSign, Target, Zap, Download, Upload, RefreshCw, Sparkles, ArrowRight, Activity, PieChart, LogOut, User, Settings, Building2, Loader2, Bell } from "lucide-react";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+  Area,
+  AreaChart
+} from "recharts";
 import Logo from "@/components/Logo";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -41,17 +54,18 @@ import {
 import { KPISkeleton, ChartSkeleton, TransactionsSkeleton, GoalsSkeleton } from "@/components/DashboardSkeleton";
 import { CashFlowChart } from "@/components/CashFlowChart";
 import { AIChat } from "@/components/AIChat";
+import { FinancialReports } from "@/components/FinancialReports";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [projectionDays, setProjectionDays] = useState<30 | 60 | 120>(30);
 
   // Fetch real data from Supabase
-  const { stats, monthlyData, cashFlowProjection, daysUntilZero } = useTransactionStats();
-  const { transactions, isLoading: transactionsLoading, createTransaction: addTransaction } = useTransactions(user?.id);
+  const { stats, monthlyData, cashFlowProjection, daysUntilZero, transactions, loading: statsLoading } = useTransactionStats();
+  const { transactions: latestTransactions, isLoading: transactionsLoading, deleteTransaction: deleteTransactionHook } = useTransactions(user?.id);
   const { goals, refreshGoals } = useSmartGoals();
 
   // Auto-sync functionality REMOVED for CFO Mode
@@ -569,7 +583,7 @@ const Dashboard = () => {
           {/* KPIs Premium - Grid com glassmorphism e gradientes */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
             {/* Show skeletons only if loading AND no cached data */}
-            {stats.loading && currentBalance === 0 && totalRevenue === 0 && totalExpenses === 0 && (
+            {statsLoading && currentBalance === 0 && totalRevenue === 0 && totalExpenses === 0 && (
               <>
                 <KPISkeleton />
                 <KPISkeleton />
@@ -578,7 +592,7 @@ const Dashboard = () => {
                 <KPISkeleton />
               </>
             )}
-            {(!stats.loading || currentBalance !== 0 || totalRevenue !== 0 || totalExpenses !== 0) && (
+            {(!statsLoading || currentBalance !== 0 || totalRevenue !== 0 || totalExpenses !== 0) && (
               <>
                 {/* Saldo Atual - Design Premium */}
                 <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-xl shadow-2xl hover:shadow-primary/20 transition-all duration-300 hover:-translate-y-1 group">
@@ -735,12 +749,12 @@ const Dashboard = () => {
           {/* Seção de Gráficos Premium */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Gráfico de Projeção - Design Premium */}
-            {stats.loading && cashFlowProjection.length === 0 && (
+            {statsLoading && cashFlowProjection.length === 0 && (
               <div className="lg:col-span-2">
                 <ChartSkeleton />
               </div>
             )}
-            {(!stats.loading || cashFlowProjection.length > 0) && (
+            {(!statsLoading || cashFlowProjection.length > 0) && (
               <Card className="lg:col-span-2 border-0 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl shadow-2xl">
                 <CardHeader className="pb-4 space-y-3">
                   <div className="flex items-center justify-between">
@@ -785,41 +799,44 @@ const Dashboard = () => {
                 <CardContent className="pt-0">
                   <div className="h-[320px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
+                      <AreaChart
                         data={cashFlowData}
                         margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                       >
                         <defs>
-                          <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={1} />
-                            <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={1} />
+                          <linearGradient id="colorBalanceDashboard" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                           </linearGradient>
-                          <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
-                            <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.05} />
-                          </linearGradient>
+                          <filter id="glowDashboard" height="200%" width="200%" x="-50%" y="-50%">
+                            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                            <feMerge>
+                              <feMergeNode in="coloredBlur" />
+                              <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                          </filter>
                         </defs>
                         <CartesianGrid
                           strokeDasharray="3 3"
                           stroke="hsl(var(--border))"
-                          opacity={0.15}
+                          opacity={0.1}
                           vertical={false}
                         />
                         <XAxis
                           dataKey="day"
                           stroke="hsl(var(--muted-foreground))"
-                          fontSize={11}
+                          fontSize={10}
                           tickLine={false}
-                          axisLine={{ stroke: 'hsl(var(--border))', opacity: 0.3 }}
-                          label={{ value: 'Dias', position: 'insideBottom', offset: -10, fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                          axisLine={false}
+                          dy={10}
                           interval={projectionDays === 30 ? 4 : projectionDays === 60 ? 9 : 14}
                         />
                         <YAxis
                           stroke="hsl(var(--muted-foreground))"
-                          fontSize={11}
+                          fontSize={10}
                           tickLine={false}
-                          axisLine={{ stroke: 'hsl(var(--border))', opacity: 0.3 }}
-                          label={{ value: 'Saldo (R$)', angle: -90, position: 'insideLeft', fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                          axisLine={false}
+                          dx={-5}
                           tickFormatter={(value) => {
                             if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
                             if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
@@ -827,33 +844,38 @@ const Dashboard = () => {
                           }}
                         />
                         <Tooltip
-                          contentStyle={{
-                            backgroundColor: 'hsl(var(--popover))',
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: '12px',
-                            padding: '12px',
-                            boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-                            backdropFilter: 'blur(8px)'
+                          content={({ active, payload, label }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="p-3 rounded-xl bg-popover/80 backdrop-blur-md border border-border/50 shadow-xl ring-1 ring-white/10">
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Dia {label}</p>
+                                  <p className="text-sm font-bold text-foreground">
+                                    {Number(payload[0].value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                  </p>
+                                  <p className="text-[10px] text-primary mt-0.5 font-medium">Saldo Projetado</p>
+                                </div>
+                              );
+                            }
+                            return null;
                           }}
-                          formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR')}`, 'Saldo']}
-                          labelFormatter={(label) => `Dia ${label}`}
                         />
                         <ReferenceLine
                           y={0}
                           stroke="hsl(var(--destructive))"
                           strokeDasharray="5 5"
-                          strokeWidth={2}
-                          label={{ value: 'Limite Crítico', position: 'right', fill: 'hsl(var(--destructive))', fontSize: 10 }}
+                          strokeWidth={1}
+                          label={{ value: 'Zero', position: 'right', fill: 'hsl(var(--destructive))', fontSize: 10 }}
                         />
-                        <Line
+                        <Area
                           type="monotone"
                           dataKey="balance"
-                          stroke="url(#lineGradient)"
-                          strokeWidth={2.5}
-                          dot={false}
-                          activeDot={{ r: 7, fill: 'hsl(var(--primary))', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={3}
+                          fill="url(#colorBalanceDashboard)"
+                          filter="url(#glowDashboard)"
+                          animationDuration={1500}
                         />
-                      </LineChart>
+                      </AreaChart>
                     </ResponsiveContainer>
                   </div>
 
@@ -885,13 +907,7 @@ const Dashboard = () => {
 
 
 
-          {/* Fluxo de Caixa Previsionado (CFO Mode) */}
-          <div className="mb-6">
-            <CashFlowChart
-              data={cashFlowProjection}
-              runwayDays={daysUntilZero}
-            />
-          </div>
+
 
           {/* Receitas vs Despesas + Transações - Design Premium */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -913,45 +929,63 @@ const Dashboard = () => {
               <CardContent className="pt-0">
                 <div className="h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={revenueExpensesData}>
+                    <BarChart data={revenueExpensesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorReceita" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={1} />
-                          <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.6} />
+                          <stop offset="0%" stopColor="#10b981" stopOpacity={0.8} />
+                          <stop offset="100%" stopColor="#10b981" stopOpacity={0.4} />
                         </linearGradient>
                         <linearGradient id="colorDespesa" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(var(--warning))" stopOpacity={1} />
-                          <stop offset="100%" stopColor="hsl(var(--warning))" stopOpacity={0.6} />
+                          <stop offset="0%" stopColor="#ef4444" stopOpacity={0.8} />
+                          <stop offset="100%" stopColor="#ef4444" stopOpacity={0.4} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.15} vertical={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.1} vertical={false} />
                       <XAxis
                         dataKey="month"
                         stroke="hsl(var(--muted-foreground))"
-                        fontSize={11}
+                        fontSize={10}
                         tickLine={false}
-                        axisLine={{ stroke: 'hsl(var(--border))', opacity: 0.3 }}
+                        axisLine={false}
+                        dy={10}
                       />
                       <YAxis
                         stroke="hsl(var(--muted-foreground))"
-                        fontSize={11}
+                        fontSize={10}
                         tickLine={false}
-                        axisLine={{ stroke: 'hsl(var(--border))', opacity: 0.3 }}
-                        tickFormatter={(value) => `R$ ${value / 1000}k`}
+                        axisLine={false}
+                        tickFormatter={(value) => `R$${value / 1000}k`}
+                        dx={-5}
                       />
                       <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--popover))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '12px',
-                          padding: '12px',
-                          boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-                          backdropFilter: 'blur(8px)'
+                        cursor={{ fill: 'transparent' }}
+                        content={({ active, payload, label }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="p-3 rounded-xl bg-popover/80 backdrop-blur-md border border-border/50 shadow-xl ring-1 ring-white/10">
+                                <p className="text-xs font-medium text-muted-foreground mb-2">{label}</p>
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                    <span className="text-sm font-bold text-foreground">
+                                      {Number(payload[0].value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                                    <span className="text-sm font-bold text-foreground">
+                                      {Number(payload[1].value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
                         }}
-                        formatter={(value: number) => `R$ ${value.toLocaleString('pt-BR')}`}
                       />
-                      <Bar dataKey="receita" fill="url(#colorReceita)" radius={[12, 12, 0, 0]} />
-                      <Bar dataKey="despesas" fill="url(#colorDespesa)" radius={[12, 12, 0, 0]} />
+                      <Bar dataKey="receita" fill="url(#colorReceita)" radius={[6, 6, 0, 0]} maxBarSize={50} animationDuration={1500} />
+                      <Bar dataKey="despesas" fill="url(#colorDespesa)" radius={[6, 6, 0, 0]} maxBarSize={50} animationDuration={1500} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -979,13 +1013,13 @@ const Dashboard = () => {
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   </div>
-                ) : recentTransactions.length === 0 ? (
+                ) : latestTransactions.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <p className="text-sm">Nenhuma transação ainda</p>
                     <p className="text-xs mt-1">Conecte um banco ou adicione transações manualmente</p>
                   </div>
                 ) : (
-                  recentTransactions.map((transaction) => {
+                  latestTransactions.map((transaction) => {
                     // Format date
                     const txDate = new Date(transaction.date);
                     const now = new Date();
@@ -1029,6 +1063,11 @@ const Dashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </div>
+
+          {/* Relatórios Financeiros (DRE) */}
+          <div className="w-full">
+            <FinancialReports transactions={transactions || []} />
           </div>
 
           {/* Metas Financeiras + Ações Rápidas - Design Premium */}

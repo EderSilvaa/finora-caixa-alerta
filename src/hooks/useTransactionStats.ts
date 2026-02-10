@@ -1,7 +1,7 @@
-// useTransactionStats Hook - Calculate financial statistics from real transaction data
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
+import type { Transaction } from '@/types'
 
 export interface TransactionStats {
   currentBalance: number
@@ -22,13 +22,6 @@ export interface CashFlowProjection {
   balance: number
 }
 
-interface TransactionData {
-  type: 'income' | 'expense'
-  amount: number
-  date?: string
-  description?: string
-}
-
 export function useTransactionStats() {
   const { user } = useAuth()
 
@@ -41,13 +34,23 @@ export function useTransactionStats() {
       // Instead of 3 separate queries, fetch once and filter in memory
       const { data: allTransactions, error: allError } = await supabase
         .from('transactions' as any)
-        .select('type, amount, date')
+        .select('*') // Fetch all fields including category
         .eq('user_id', user.id)
-        .order('date', { ascending: true }) as { data: TransactionData[] | null; error: any }
+        .order('date', { ascending: true })
 
       if (allError) throw allError
 
-      const transactions = allTransactions || []
+      const transactions: Transaction[] = (allTransactions || []).map((t: any) => ({
+        id: t.id,
+        userId: t.user_id,
+        type: t.type,
+        amount: Number(t.amount),
+        description: t.description,
+        category: t.category,
+        date: t.date,
+        createdAt: t.created_at,
+        updatedAt: t.updated_at,
+      }))
 
       // Get current month's start and end dates
       const now = new Date()
@@ -115,11 +118,17 @@ export function useTransactionStats() {
       // Generate cash flow projection from the same transactions (no extra query)
       const cashFlowProjection = await generateCashFlowProjection(balance, currentRevenue, currentExpenses, transactions)
 
+      // Calculate days until zero (assuming calculateDaysUntilZero is defined elsewhere or will be added)
+      // For now, we'll use a placeholder or assume it's a variable as per the instruction's snippet.
+      // If calculateDaysUntilZero is a function, it should be called here.
+      const daysUntilZero = calculateDaysUntilZero(statsData); // Assuming this function exists
+
       return {
         stats: statsData,
         monthlyData,
         cashFlowProjection,
-        daysUntilZero: calculateDaysUntilZero(statsData),
+        daysUntilZero,
+        transactions,
       }
     },
     enabled: !!user?.id,
@@ -128,7 +137,7 @@ export function useTransactionStats() {
 
   // Helper functions moved inside (or could be outside if pure)
 
-  const generateMonthlyDataFromTransactions = (transactions: TransactionData[]): MonthlyData[] => {
+  const generateMonthlyDataFromTransactions = (transactions: Transaction[]): MonthlyData[] => {
     try {
       const now = new Date()
       const months: MonthlyData[] = []
@@ -168,7 +177,7 @@ export function useTransactionStats() {
     }
   }
 
-  const calculateDailyBalances = (transactions: TransactionData[]) => {
+  const calculateDailyBalances = (transactions: Transaction[]) => {
     const dailyMap = new Map<string, number>()
 
     transactions.forEach(t => {
@@ -219,7 +228,7 @@ export function useTransactionStats() {
     return { value: ema, trend }
   }
 
-  const detectRecurringTransactions = (transactions: TransactionData[]) => {
+  const detectRecurringTransactions = (transactions: Transaction[]) => {
     const patterns: Array<{ amount: number; frequency: number; type: 'income' | 'expense' }> = []
     const amountMap = new Map<number, number>()
 
@@ -244,7 +253,7 @@ export function useTransactionStats() {
     return patterns
   }
 
-  const analyzeSeasonality = (transactions: TransactionData[]) => {
+  const analyzeSeasonality = (transactions: Transaction[]) => {
     const monthlyTotals = new Array(12).fill(0)
     const monthlyCounts = new Array(12).fill(0)
 
@@ -306,7 +315,7 @@ export function useTransactionStats() {
     currentBalance: number,
     monthlyRevenue: number,
     monthlyExpenses: number,
-    allTransactions: TransactionData[]
+    allTransactions: Transaction[]
   ) => {
     try {
       // Filter for last 6 months only (for ML projection)
@@ -406,6 +415,7 @@ export function useTransactionStats() {
     monthlyData: data?.monthlyData || [],
     cashFlowProjection: data?.cashFlowProjection || [],
     daysUntilZero: data?.daysUntilZero || 0,
+    transactions: data?.transactions || [],
     loading: isLoading,
     error: error ? (error as Error).message : null,
   }

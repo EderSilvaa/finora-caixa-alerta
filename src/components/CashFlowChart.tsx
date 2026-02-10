@@ -33,83 +33,102 @@ export const CashFlowChart = ({ data, runwayDays }: CashFlowChartProps) => {
     });
 
     return (
-        <Card className="border-0 bg-gradient-to-br from-card/95 to-card/80 backdrop-blur-xl shadow-2xl">
-            <CardHeader className="pb-4">
+        <Card className="border-0 bg-gradient-to-br from-card/95 to-card/50 backdrop-blur-xl shadow-2xl overflow-hidden">
+            <CardHeader className="pb-4 relative z-10">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/10 shadow-inner">
                             <TrendingUp className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                            <CardTitle className="text-lg font-bold text-foreground">Projeção de Fluxo de Caixa</CardTitle>
-                            <CardDescription className="text-xs">
+                            <CardTitle className="text-lg font-bold text-foreground tracking-tight">Projeção de Fluxo de Caixa</CardTitle>
+                            <CardDescription className="text-xs font-medium text-muted-foreground/80">
                                 Previsão para os próximos 120 dias
                                 {runwayDays !== undefined && runwayDays < 999 && (
-                                    <span className="ml-2 font-semibold text-destructive">
-                                        (Runway: ~{runwayDays} dias)
+                                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive text-[10px] font-bold border border-destructive/20 animate-pulse">
+                                        Runway: ~{runwayDays} dias
                                     </span>
                                 )}
                             </CardDescription>
                         </div>
                     </div>
                     <div className={`text-right ${isPositive ? 'text-success' : 'text-destructive'}`}>
-                        <div className="text-2xl font-bold">
+                        <div className="text-2xl font-bold tracking-tighter drop-shadow-sm">
                             {isPositive ? '+' : ''}{formatCurrency(growth)}
                         </div>
-                        <div className="text-xs text-muted-foreground">variação prevista</div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">variação prevista</div>
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="pt-0">
+            <CardContent className="pt-0 relative z-10">
                 <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData}>
+                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
                                     <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                                 </linearGradient>
+                                <filter id="glow" height="200%" width="200%" x="-50%" y="-50%">
+                                    <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                                    <feMerge>
+                                        <feMergeNode in="coloredBlur" />
+                                        <feMergeNode in="SourceGraphic" />
+                                    </feMerge>
+                                </filter>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.15} vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.1} vertical={false} />
                             <XAxis
                                 dataKey="date"
                                 stroke="hsl(var(--muted-foreground))"
-                                fontSize={11}
+                                fontSize={10}
                                 tickLine={false}
-                                axisLine={{ stroke: 'hsl(var(--border))', opacity: 0.3 }}
-                                minTickGap={30}
+                                axisLine={false}
+                                minTickGap={40}
+                                dy={10}
                             />
                             <YAxis
                                 stroke="hsl(var(--muted-foreground))"
-                                fontSize={11}
+                                fontSize={10}
                                 tickLine={false}
-                                axisLine={{ stroke: 'hsl(var(--border))', opacity: 0.3 }}
+                                axisLine={false}
                                 tickFormatter={(value) => `R$${(value / 1000).toFixed(0)}k`}
+                                dx={-5}
                             />
                             <Tooltip
-                                contentStyle={{
-                                    backgroundColor: 'hsl(var(--popover))',
-                                    border: '1px solid hsl(var(--border))',
-                                    borderRadius: '12px',
-                                    padding: '12px',
-                                    boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-                                    backdropFilter: 'blur(8px)'
+                                content={({ active, payload, label }) => {
+                                    if (active && payload && payload.length) {
+                                        return (
+                                            <div className="p-3 rounded-xl bg-popover/80 backdrop-blur-md border border-border/50 shadow-xl ring-1 ring-white/10">
+                                                <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
+                                                <p className="text-sm font-bold text-foreground">
+                                                    {formatCurrency(payload[0].value as number)}
+                                                </p>
+                                                <p className="text-[10px] text-primary mt-0.5 font-medium">Saldo Projetado</p>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
                                 }}
-                                formatter={(value: number) => [formatCurrency(value), 'Saldo Projetado']}
-                                labelFormatter={(label) => `Data: ${label}`}
                             />
                             <Area
                                 type="monotone"
                                 dataKey="balance"
                                 stroke="hsl(var(--primary))"
-                                strokeWidth={2}
+                                strokeWidth={3}
+                                filter="url(#glow)"
                                 fillOpacity={1}
                                 fill="url(#colorBalance)"
+                                animationDuration={1500}
+                                animationEasing="ease-in-out"
                             />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
             </CardContent>
+            {/* Background Decorator */}
+            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-32 h-32 bg-secondary/5 rounded-full blur-3xl" />
         </Card>
     );
 };
