@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFinancialReports, DRELineItem } from '@/hooks/useFinancialReports';
@@ -15,7 +14,6 @@ interface FinancialReportsProps {
 
 export const FinancialReports = ({ transactions, currentDate = new Date() }: FinancialReportsProps) => {
     const { dreData } = useFinancialReports(transactions, currentDate);
-    const [activeTab, setActiveTab] = useState("dre");
 
     const getRowStyle = (item: DRELineItem) => {
         if (item.isTotal) return "font-bold bg-muted/30";
@@ -32,9 +30,9 @@ export const FinancialReports = ({ transactions, currentDate = new Date() }: Fin
 
     return (
         <Card className="border-0 shadow-lg bg-card/50 backdrop-blur-sm">
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <div>
+            <CardHeader className="pb-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-1">
                         <CardTitle className="text-xl font-bold flex items-center gap-2">
                             <FileText className="w-5 h-5 text-primary" />
                             Relatórios Financeiros
@@ -43,68 +41,79 @@ export const FinancialReports = ({ transactions, currentDate = new Date() }: Fin
                             Análise detalhada de {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
                         </CardDescription>
                     </div>
-                    <div className="flex items-center gap-2">
-                        {/* Future: Date Picker */}
-                    </div>
                 </div>
             </CardHeader>
             <CardContent>
-                <Tabs defaultValue="dre" className="w-full" onValueChange={setActiveTab}>
-                    <TabsList className="grid w-full grid-cols-2 mb-6">
-                        <TabsTrigger value="dre">DRE (Demonstrativo de Resultado)</TabsTrigger>
-                        <TabsTrigger value="cashflow">Fluxo de Caixa</TabsTrigger>
+                <Tabs defaultValue="dre" className="w-full">
+                    <TabsList className="mb-6 !grid !h-auto w-full !grid-cols-1 gap-1 sm:!grid-cols-2">
+                        <TabsTrigger
+                            value="dre"
+                            className="!h-auto w-full justify-start !whitespace-normal px-3 py-2 text-left text-xs leading-tight sm:justify-center sm:text-center sm:text-sm"
+                        >
+                            DRE (Demonstrativo de Resultado)
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="cashflow"
+                            className="!h-auto w-full justify-start !whitespace-normal px-3 py-2 text-left text-xs leading-tight sm:justify-center sm:text-center sm:text-sm"
+                        >
+                            Fluxo de Caixa
+                        </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="dre" className="space-y-4">
-                        <div className="rounded-xl border border-border overflow-hidden">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="bg-muted/50 border-b border-border">
-                                        <th className="text-left p-4 font-semibold text-sm">Descrição</th>
-                                        <th className="text-right p-4 font-semibold text-sm">Valor</th>
-                                        <th className="text-right p-4 font-semibold text-sm w-24">A.V. %</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {dreData.items.map((item, index) => (
-                                        <tr
-                                            key={index}
-                                            className={`border-b border-border/50 hover:bg-muted/20 transition-colors ${getRowStyle(item)}`}
-                                        >
-                                            <td className="p-4 flex items-center gap-2">
-                                                {item.type === 'revenue' && <TrendingUp className="w-4 h-4 text-success opacity-70" />}
-                                                {item.type === 'expense' && <TrendingDown className="w-4 h-4 text-destructive opacity-70" />}
-                                                {item.type === 'result' && <DollarSign className="w-4 h-4 text-primary opacity-70" />}
-                                                {item.name}
-                                            </td>
-                                            <td className={`p-4 text-right ${getValueColor(item)}`}>
-                                                {formatCurrency(item.value)}
-                                            </td>
-                                            <td className="p-4 text-right text-muted-foreground text-xs">
-                                                {item.percentage.toFixed(1)}%
-                                            </td>
+                        <div className="rounded-xl border border-border">
+                            <div className="overflow-x-auto">
+                                <table className="w-full min-w-[560px]">
+                                    <thead>
+                                        <tr className="bg-muted/50 border-b border-border">
+                                            <th className="p-3 text-left text-xs font-semibold sm:p-4 sm:text-sm">Descrição</th>
+                                            <th className="p-3 text-right text-xs font-semibold sm:p-4 sm:text-sm">Valor</th>
+                                            <th className="w-20 p-3 text-right text-xs font-semibold sm:w-24 sm:p-4 sm:text-sm">A.V. %</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {dreData.items.map((item, index) => (
+                                            <tr
+                                                key={index}
+                                                className={`border-b border-border/50 hover:bg-muted/20 transition-colors ${getRowStyle(item)}`}
+                                            >
+                                                <td className="p-3 align-top sm:p-4">
+                                                    <div className="flex items-start gap-2">
+                                                        {item.type === 'revenue' && <TrendingUp className="h-4 w-4 shrink-0 text-success opacity-70" />}
+                                                        {item.type === 'expense' && <TrendingDown className="h-4 w-4 shrink-0 text-destructive opacity-70" />}
+                                                        {item.type === 'result' && <DollarSign className="h-4 w-4 shrink-0 text-primary opacity-70" />}
+                                                        <span className="break-words">{item.name}</span>
+                                                    </div>
+                                                </td>
+                                                <td className={`whitespace-nowrap p-3 text-right align-top sm:p-4 ${getValueColor(item)}`}>
+                                                    {formatCurrency(item.value)}
+                                                </td>
+                                                <td className="whitespace-nowrap p-3 text-right text-xs text-muted-foreground align-top sm:p-4">
+                                                    {item.percentage.toFixed(1)}%
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                             <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
                                 <p className="text-xs text-muted-foreground mb-1">Margem Bruta</p>
-                                <p className="text-2xl font-bold text-primary">
+                                <p className="text-xl font-bold text-primary sm:text-2xl">
                                     {((dreData.grossProfit / dreData.netRevenue) * 100 || 0).toFixed(1)}%
                                 </p>
                             </div>
                             <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
                                 <p className="text-xs text-muted-foreground mb-1">Margem Operacional</p>
-                                <p className="text-2xl font-bold text-primary">
+                                <p className="text-xl font-bold text-primary sm:text-2xl">
                                     {((dreData.operatingExpenses / dreData.netRevenue) * 100 || 0).toFixed(1)}%
                                 </p>
                             </div>
                             <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
                                 <p className="text-xs text-muted-foreground mb-1">Margem Líquida</p>
-                                <p className="text-2xl font-bold text-primary">
+                                <p className="text-xl font-bold text-primary sm:text-2xl">
                                     {((dreData.netIncome / dreData.netRevenue) * 100 || 0).toFixed(1)}%
                                 </p>
                             </div>
