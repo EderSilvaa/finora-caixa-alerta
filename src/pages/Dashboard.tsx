@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Brain, TrendingDown, Calendar, AlertTriangle, TrendingUp, ArrowUpRight, ArrowDownRight, DollarSign, Target, Zap, Download, Upload, RefreshCw, Sparkles, ArrowRight, Activity, PieChart, LogOut, User, Settings, Building2, Loader2, Bell } from "lucide-react";
-import { transactionsService } from "@/services/transactions.service";
 import {
   LineChart,
   Line,
@@ -66,7 +65,7 @@ const Dashboard = () => {
 
   // Fetch real data from Supabase - NOW includes simulation support
   const { stats, monthlyData, cashFlowProjection, daysUntilZero, transactions, loading: statsLoading, simulate, activeSimulation } = useTransactionStats();
-  const { transactions: latestTransactions, isLoading: transactionsLoading, deleteTransaction: deleteTransactionHook } = useTransactions(user?.id);
+  const { transactions: latestTransactions, isLoading: transactionsLoading, deleteTransaction: deleteTransactionHook, createTransaction, isCreating } = useTransactions(user?.id);
   const { goals, refreshGoals } = useSmartGoals();
 
   // Auto-sync functionality REMOVED for CFO Mode
@@ -160,8 +159,10 @@ const Dashboard = () => {
   // Estados para formulários
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseDescription, setExpenseDescription] = useState("");
+  const [expenseCategory, setExpenseCategory] = useState("Outros");
   const [incomeAmount, setIncomeAmount] = useState("");
   const [incomeDescription, setIncomeDescription] = useState("");
+  const [incomeCategory, setIncomeCategory] = useState("Receita");
 
   // Use real data from hooks
   const currentBalance = stats.currentBalance;
@@ -179,7 +180,7 @@ const Dashboard = () => {
   const analyzedPeriod = 90;
 
   // Função para registrar despesa
-  const handleAddExpense = async () => {
+  const handleAddExpense = () => {
     if (!expenseAmount || !expenseDescription) {
       toast({
         title: "Campos obrigatórios",
@@ -190,37 +191,31 @@ const Dashboard = () => {
     }
 
     const amount = parseFloat(expenseAmount);
-
-    try {
-      await transactionsService.createTransaction({
-        user_id: user.id,
-        type: 'expense',
-        description: expenseDescription,
-        amount: amount,
-        category: 'Outros', // Capitalized to match valid categories
-        date: new Date().toISOString(),
-        status: 'completed'
-      });
-
-      setExpenseAmount("");
-      setExpenseDescription("");
-      setShowExpenseModal(false);
-
+    if (isNaN(amount) || amount <= 0) {
       toast({
-        title: "Despesa registrada!",
-        description: `R$ ${amount.toLocaleString('pt-BR')} adicionado às despesas`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao registrar despesa",
-        description: error.message,
+        title: "Valor inválido",
+        description: "Insira um valor positivo",
         variant: "destructive"
       });
+      return;
     }
+
+    createTransaction({
+      type: 'expense',
+      description: expenseDescription,
+      amount,
+      category: expenseCategory,
+      date: new Date().toISOString(),
+    });
+
+    setExpenseAmount("");
+    setExpenseDescription("");
+    setExpenseCategory("Outros");
+    setShowExpenseModal(false);
   };
 
   // Função para registrar receita
-  const handleAddIncome = async () => {
+  const handleAddIncome = () => {
     if (!incomeAmount || !incomeDescription) {
       toast({
         title: "Campos obrigatórios",
@@ -231,33 +226,27 @@ const Dashboard = () => {
     }
 
     const amount = parseFloat(incomeAmount);
-
-    try {
-      await transactionsService.createTransaction({
-        user_id: user.id,
-        type: 'income',
-        description: incomeDescription,
-        amount: amount,
-        category: 'Receita', // Capitalized
-        date: new Date().toISOString(),
-        status: 'completed'
-      });
-
-      setIncomeAmount("");
-      setIncomeDescription("");
-      setShowIncomeModal(false);
-
+    if (isNaN(amount) || amount <= 0) {
       toast({
-        title: "Receita registrada!",
-        description: `R$ ${amount.toLocaleString('pt-BR')} adicionado às receitas`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao registrar receita",
-        description: error.message,
+        title: "Valor inválido",
+        description: "Insira um valor positivo",
         variant: "destructive"
       });
+      return;
     }
+
+    createTransaction({
+      type: 'income',
+      description: incomeDescription,
+      amount,
+      category: incomeCategory,
+      date: new Date().toISOString(),
+    });
+
+    setIncomeAmount("");
+    setIncomeDescription("");
+    setIncomeCategory("Receita");
+    setShowIncomeModal(false);
   };
 
   // Função para abrir modal de análise (sem rodar nova análise)
@@ -726,6 +715,52 @@ const Dashboard = () => {
             )}
           </div>
 
+          {/* Ações Rápidas - Destaque no topo */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+            <button
+              onClick={() => setShowExpenseModal(true)}
+              className="group flex flex-col items-center gap-2 rounded-xl border-2 border-border/60 bg-card/50 p-4 backdrop-blur-sm transition-all hover:border-destructive/50 hover:bg-destructive/5 hover:shadow-lg sm:p-5"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10 transition-colors group-hover:bg-destructive/20">
+                <Download className="h-6 w-6 text-destructive" />
+              </div>
+              <span className="text-xs font-semibold sm:text-sm">Registrar Despesa</span>
+            </button>
+
+            <button
+              onClick={() => setShowIncomeModal(true)}
+              className="group flex flex-col items-center gap-2 rounded-xl border-2 border-border/60 bg-card/50 p-4 backdrop-blur-sm transition-all hover:border-success/50 hover:bg-success/5 hover:shadow-lg sm:p-5"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-success/10 transition-colors group-hover:bg-success/20">
+                <Upload className="h-6 w-6 text-success" />
+              </div>
+              <span className="text-xs font-semibold sm:text-sm">Registrar Receita</span>
+            </button>
+
+            <button
+              onClick={handleNewProjection}
+              className="group flex flex-col items-center gap-2 rounded-xl border-2 border-border/60 bg-card/50 p-4 backdrop-blur-sm transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-lg sm:p-5"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 transition-colors group-hover:bg-primary/20">
+                <Activity className="h-6 w-6 text-primary" />
+              </div>
+              <span className="text-xs font-semibold sm:text-sm">Nova Projeção</span>
+            </button>
+
+            <button
+              onClick={insights.length > 0 || balancePrediction || anomalies.length > 0 ? handleOpenAnalysisModal : handleAIAnalysis}
+              disabled={aiLoading}
+              className="group flex flex-col items-center gap-2 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-4 backdrop-blur-sm transition-all hover:border-primary/60 hover:shadow-lg disabled:opacity-50 sm:p-5"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20 transition-colors group-hover:bg-primary/30">
+                <Brain className="h-6 w-6 text-primary" />
+              </div>
+              <span className="text-xs font-semibold sm:text-sm">
+                {insights.length > 0 || balancePrediction || anomalies.length > 0 ? 'Ver Análise IA' : 'Análise IA'}
+              </span>
+            </button>
+          </div>
+
           {/* Action Plan for Critical Cash Flow */}
           {daysUntilZero < 15 && daysUntilZero > 0 && (
             <ActionPlan
@@ -1071,88 +1106,10 @@ const Dashboard = () => {
             <FinancialReports transactions={transactions || []} />
           </div>
 
-          {/* Metas Financeiras + Ações Rápidas - Design Premium */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Smart Goals - IA-powered financial goals */}
-            <SmartGoals
-              onCreateGoal={() => setShowCreateGoal(true)}
-            />
-
-            {/* Ações Rápidas - Design Premium */}
-            <Card className="border-0 bg-gradient-to-br from-primary/5 via-card/95 to-secondary/5 backdrop-blur-xl shadow-2xl">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg shadow-primary/30">
-                    <Zap className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-bold text-foreground">Ações Rápidas</CardTitle>
-                    <CardDescription className="text-xs">Gerencie seu fluxo de caixa</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button
-                  variant="outline"
-                  className="w-full justify-between h-14 text-base border-2 hover:border-destructive/50 hover:bg-destructive/5 transition-all group"
-                  onClick={() => setShowExpenseModal(true)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center group-hover:bg-destructive/20 transition-colors">
-                      <Download className="w-5 h-5 text-destructive" />
-                    </div>
-                    <span className="font-semibold">Registrar Despesa</span>
-                  </div>
-                  <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="w-full justify-between h-14 text-base border-2 hover:border-success/50 hover:bg-success/5 transition-all group"
-                  onClick={() => setShowIncomeModal(true)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-success/10 flex items-center justify-center group-hover:bg-success/20 transition-colors">
-                      <Upload className="w-5 h-5 text-success" />
-                    </div>
-                    <span className="font-semibold">Registrar Receita</span>
-                  </div>
-                  <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="w-full justify-between h-14 text-base border-2 hover:border-primary/50 hover:bg-primary/5 transition-all group"
-                  onClick={handleNewProjection}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <Activity className="w-5 h-5 text-primary" />
-                    </div>
-                    <span className="font-semibold">Nova Projeção</span>
-                  </div>
-                  <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Button>
-
-                <Button
-                  variant="gradient"
-                  className="w-full justify-between h-14 text-base shadow-lg hover:shadow-xl transition-all group"
-                  onClick={insights.length > 0 || balancePrediction || anomalies.length > 0 ? handleOpenAnalysisModal : handleAIAnalysis}
-                  disabled={aiLoading}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                      <Brain className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="font-semibold">
-                      {insights.length > 0 || balancePrediction || anomalies.length > 0 ? 'Ver Análise IA' : 'Análise Detalhada IA'}
-                    </span>
-                  </div>
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          {/* Metas Financeiras */}
+          <SmartGoals
+            onCreateGoal={() => setShowCreateGoal(true)}
+          />
         </div>
       </main>
 
@@ -1437,6 +1394,8 @@ const Dashboard = () => {
               <Input
                 id="expense-amount"
                 type="number"
+                min="0.01"
+                step="0.01"
                 placeholder="0,00"
                 className="h-12 text-base"
                 value={expenseAmount}
@@ -1453,9 +1412,28 @@ const Dashboard = () => {
                 onChange={(e) => setExpenseDescription(e.target.value)}
               />
             </div>
-            <Button onClick={handleAddExpense} className="w-full h-12 text-base bg-destructive hover:bg-destructive/90 shadow-lg" variant="destructive">
+            <div className="space-y-2">
+              <Label htmlFor="expense-category" className="text-sm font-semibold">Categoria</Label>
+              <select
+                id="expense-category"
+                className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={expenseCategory}
+                onChange={(e) => setExpenseCategory(e.target.value)}
+              >
+                <option value="Fornecedores">Fornecedores</option>
+                <option value="Fixo">Fixo</option>
+                <option value="Variável">Variável</option>
+                <option value="Salários">Salários</option>
+                <option value="Aluguel">Aluguel</option>
+                <option value="Serviços">Serviços</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Impostos">Impostos</option>
+                <option value="Outros">Outros</option>
+              </select>
+            </div>
+            <Button onClick={handleAddExpense} disabled={isCreating} className="w-full h-12 text-base bg-destructive hover:bg-destructive/90 shadow-lg" variant="destructive">
               <Download className="w-5 h-5 mr-2" />
-              Registrar Despesa
+              {isCreating ? 'Registrando...' : 'Registrar Despesa'}
             </Button>
           </div>
         </DialogContent>
@@ -1481,6 +1459,8 @@ const Dashboard = () => {
               <Input
                 id="income-amount"
                 type="number"
+                min="0.01"
+                step="0.01"
                 placeholder="0,00"
                 className="h-12 text-base"
                 value={incomeAmount}
@@ -1497,9 +1477,22 @@ const Dashboard = () => {
                 onChange={(e) => setIncomeDescription(e.target.value)}
               />
             </div>
-            <Button onClick={handleAddIncome} className="w-full h-12 text-base bg-success hover:bg-success/90 shadow-lg">
+            <div className="space-y-2">
+              <Label htmlFor="income-category" className="text-sm font-semibold">Categoria</Label>
+              <select
+                id="income-category"
+                className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={incomeCategory}
+                onChange={(e) => setIncomeCategory(e.target.value)}
+              >
+                <option value="Vendas">Vendas</option>
+                <option value="Receita">Receita</option>
+                <option value="Outros">Outros</option>
+              </select>
+            </div>
+            <Button onClick={handleAddIncome} disabled={isCreating} className="w-full h-12 text-base bg-success hover:bg-success/90 shadow-lg">
               <Upload className="w-5 h-5 mr-2" />
-              Registrar Receita
+              {isCreating ? 'Registrando...' : 'Registrar Receita'}
             </Button>
           </div>
         </DialogContent>
