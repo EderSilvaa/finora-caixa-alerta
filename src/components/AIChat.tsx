@@ -1,20 +1,33 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, Sparkles, Loader2, X } from 'lucide-react'
+import { Send, Bot, User, Sparkles, Loader2, X, CheckCircle, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react'
 import { aiService } from '@/services/ai.service'
+import { transactionsService } from '@/services/transactions.service'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useAuth } from '@/hooks/useAuth'
-import { cn } from '@/lib/utils'
+import { cn, formatCurrency } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface Message {
     role: 'user' | 'assistant'
     content: string
+    command?: {
+        type: 'SIMULATION' | 'ADD_TRANSACTION'
+        data: any
+    }
 }
 
-export function AIChat() {
+interface AIChatProps {
+    onSimulate?: (simulation: any) => void;
+}
+
+export function AIChat({ onSimulate }: AIChatProps) {
     const { user } = useAuth()
+    const { toast } = useToast()
+    const queryClient = useQueryClient()
     const [messages, setMessages] = useState<Message[]>([])
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
@@ -26,7 +39,7 @@ export function AIChat() {
             setMessages([
                 {
                     role: 'assistant',
-                    content: 'Olá! Sou o Finora AI, seu assistente financeiro pessoal. Analisei suas transações dos últimos 90 dias. Como posso ajudar você hoje?'
+                    content: 'Olá! Sou o Finora AI. Posso simular cenários futuros ou registrar transações para você via chat. Como posso ajudar?'
                 }
             ])
         }
@@ -49,13 +62,21 @@ export function AIChat() {
 
         try {
             // Prepare history for API (last 10 messages to keep context but limit tokens)
-            const history = [...messages, userMessage].slice(-10)
+            // Strip command data to save tokens
+            const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content }))
+            history.push({ role: 'user', content: userMessage.content })
 
             const response = await aiService.chat(user.id, history)
 
+            // Execute simulation command if present
+            if (response.command?.type === 'SIMULATION' && onSimulate) {
+                onSimulate(response.command.data)
+            }
+
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: response.content
+                content: response.content,
+                command: response.command
             }])
         } catch (error) {
             console.error('Failed to send message:', error)
@@ -68,11 +89,139 @@ export function AIChat() {
         }
     }
 
+    const handleConfirmTransaction = async (data: any) => {
+        if (!user) return
+        try {
+            // Validate category
+            const validCategories = [
+                'Vendas', 'Fornecedores', 'Fixo', 'Variável', 'Receita',
+                'Salários', 'Aluguel', 'Serviços', 'Marketing', 'Impostos', 'Outros'
+            ];
+
+            const category = validCategories.includes(data.category) ? data.category : 'Outros';
+
+            if (category !== data.category) {
+                console.warn(`[AIChat] Invalid category '${data.category}' replaced with 'Outros'`);
+            }
+
+            await transactionsService.createTransaction(user.id, {
+                type: (data.type?.toLowerCase() === 'receita' || data.type === 'income') ? 'income' : 'expense',
+                amount: Number(data.amount),
+                category: category,
+                description: data.description,
+                date: data.date || new Date().toISOString(),
+                // status: 'completed' // Remove validation if extra field causes issues
+            })
+
+            toast({ title: 'Transação registrada com sucesso!' })
+
+            // Invalidate queries to update dashboard
+            queryClient.invalidateQueries({ queryKey: ['transaction-stats'] })
+            queryClient.invalidateQueries({ queryKey: ['transactions'] })
+
+            // Add confirmation message
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: `✅ Transação de ${formatCurrency(data.amount)} (${category}) registrada!`
+            }])
+
+        } catch (error: any) {
+            console.error('[AIChat] Transaction error:', error);
+            toast({
+                title: 'Erro ao registrar transação',
+                description: error.message || 'Verifique os console logs para mais detalhes.',
+                variant: 'destructive'
+            })
+        }
+    }
+
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
             handleSend()
         }
+    }
+
+    const renderCommandCard = (command: any) => {
+        if (!command) return null
+
+        if (command.type === 'ADD_TRANSACTION') {
+            const { data } = command
+            return (
+                <div className="mt-3 p-4 bg-card rounded-xl border border-border shadow-sm">
+                    <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-foreground">
+                        <CheckCircle className="w-4 h-4 text-primary" />
+                        Confirmar Transação
+                    </div>
+                    <div className="space-y-2 text-sm text-muted-foreground mb-4">
+                        <div className="flex justify-between">
+                            <span>Descrição:</span>
+                            <span className="font-medium text-foreground">{data.description}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>Valor:</span>
+                            <span className={cn("font-medium", data.type === 'income' ? 'text-success' : 'text-destructive')}>
+                                {formatCurrency(data.amount)}
+                            </span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>Categoria:</span>
+                            <span className="font-medium text-foreground">{data.category}</span>
+                        </div>
+                    </div>
+                    <Button
+                        size="sm"
+                        className="w-full"
+                        onClick={() => handleConfirmTransaction(data)}
+                    >
+                        Confirmar Registro
+                    </Button>
+                </div>
+            )
+        }
+
+        if (command.type === 'SIMULATION') {
+            const { data } = command
+            return (
+                <div className="mt-3 p-4 bg-primary/5 rounded-xl border border-primary/20 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-2 opacity-10">
+                        <TrendingUp className="w-24 h-24 text-primary" />
+                    </div>
+                    <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-primary relative z-10">
+                        <Sparkles className="w-4 h-4" />
+                        Cenário Simulado
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3 relative z-10">
+                        {data.description}
+                    </p>
+                    <div className="space-y-2 text-sm relative z-10">
+                        {data.revenueChange !== 0 && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground">Receita:</span>
+                                <span className={cn("font-bold", data.revenueChange > 0 ? "text-success" : "text-destructive")}>
+                                    {data.revenueChange > 0 ? '+' : ''}{data.revenueChange}%
+                                </span>
+                            </div>
+                        )}
+                        {data.expenseChange !== 0 && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground">Despesas:</span>
+                                <span className={cn("font-bold", data.expenseChange < 0 ? "text-success" : "text-destructive")}>
+                                    {data.expenseChange > 0 ? '+' : ''}{data.expenseChange}%
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-primary/10 relative z-10">
+                        <p className="text-xs text-muted-foreground">
+                            *A projeção no gráfico foi atualizada temporariamente para refletir este cenário.
+                        </p>
+                    </div>
+                </div>
+            )
+        }
+
+        return null
     }
 
     return (
@@ -112,13 +261,18 @@ export function AIChat() {
                                     {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                                 </div>
 
-                                <div className={cn(
-                                    "rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm",
-                                    m.role === 'user'
-                                        ? "bg-primary text-primary-foreground rounded-tr-none"
-                                        : "bg-muted/50 border border-border/50 text-foreground rounded-tl-none"
-                                )}>
-                                    <p className="whitespace-pre-wrap">{m.content}</p>
+                                <div className="flex flex-col gap-1">
+                                    <div className={cn(
+                                        "rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm",
+                                        m.role === 'user'
+                                            ? "bg-primary text-primary-foreground rounded-tr-none"
+                                            : "bg-muted/50 border border-border/50 text-foreground rounded-tl-none"
+                                    )}>
+                                        <p className="whitespace-pre-wrap">{m.content}</p>
+                                    </div>
+
+                                    {/* Render Rich Cards if command exists */}
+                                    {m.role === 'assistant' && m.command && renderCommandCard(m.command)}
                                 </div>
                             </div>
                         ))}
@@ -143,7 +297,7 @@ export function AIChat() {
             <CardFooter className="p-4 border-t border-border/40">
                 <div className="flex w-full gap-2">
                     <Input
-                        placeholder="Pergunte sobre seus gastos, saldo ou dicas de economia..."
+                        placeholder="Pergunte sobre seus gastos, saldo ou diga 'Gastei 50 no almoço'..."
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}

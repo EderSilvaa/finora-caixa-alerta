@@ -28,6 +28,13 @@ export const FinancialReports = ({ transactions, currentDate = new Date() }: Fin
         return 'text-foreground';
     }
 
+    const getItemIcon = (item: DRELineItem) => {
+        if (item.type === 'revenue') return <TrendingUp className="h-4 w-4 shrink-0 text-success opacity-70" />;
+        if (item.type === 'expense') return <TrendingDown className="h-4 w-4 shrink-0 text-destructive opacity-70" />;
+        if (item.type === 'result') return <DollarSign className="h-4 w-4 shrink-0 text-primary opacity-70" />;
+        return null;
+    };
+
     return (
         <Card className="border-0 shadow-lg bg-card/50 backdrop-blur-sm">
             <CardHeader className="pb-4">
@@ -61,7 +68,33 @@ export const FinancialReports = ({ transactions, currentDate = new Date() }: Fin
                     </TabsList>
 
                     <TabsContent value="dre" className="space-y-4">
-                        <div className="rounded-xl border border-border">
+                        {/* Mobile layout */}
+                        <div className="rounded-xl border border-border overflow-hidden sm:hidden">
+                            {dreData.items.map((item, index) => (
+                                <div
+                                    key={index}
+                                    className={`flex items-center justify-between px-4 py-3 ${
+                                        item.isTotal
+                                            ? 'bg-muted/40 border-t border-b border-border'
+                                            : index > 0 ? 'border-t border-border/40' : ''
+                                    } ${item.level === 1 ? 'pl-8' : ''}`}
+                                >
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                        {getItemIcon(item)}
+                                        <span className={`text-xs leading-tight truncate ${
+                                            item.isTotal ? 'font-bold text-sm' : 'text-muted-foreground'
+                                        }`}>
+                                            {item.name}
+                                        </span>
+                                    </div>
+                                    <span className={`text-sm font-semibold whitespace-nowrap ml-3 ${getValueColor(item)}`}>
+                                        {formatCurrency(item.value)}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="hidden rounded-xl border border-border sm:block">
                             <div className="overflow-x-auto">
                                 <table className="w-full min-w-[560px]">
                                     <thead>
@@ -79,9 +112,7 @@ export const FinancialReports = ({ transactions, currentDate = new Date() }: Fin
                                             >
                                                 <td className="p-3 align-top sm:p-4">
                                                     <div className="flex items-start gap-2">
-                                                        {item.type === 'revenue' && <TrendingUp className="h-4 w-4 shrink-0 text-success opacity-70" />}
-                                                        {item.type === 'expense' && <TrendingDown className="h-4 w-4 shrink-0 text-destructive opacity-70" />}
-                                                        {item.type === 'result' && <DollarSign className="h-4 w-4 shrink-0 text-primary opacity-70" />}
+                                                        {getItemIcon(item)}
                                                         <span className="break-words">{item.name}</span>
                                                     </div>
                                                 </td>

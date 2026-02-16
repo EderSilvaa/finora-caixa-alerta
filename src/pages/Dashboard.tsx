@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Brain, TrendingDown, Calendar, AlertTriangle, TrendingUp, ArrowUpRight, ArrowDownRight, DollarSign, Target, Zap, Download, Upload, RefreshCw, Sparkles, ArrowRight, Activity, PieChart, LogOut, User, Settings, Building2, Loader2, Bell } from "lucide-react";
+import { transactionsService } from "@/services/transactions.service";
 import {
   LineChart,
   Line,
@@ -59,12 +60,12 @@ import { FinancialReports } from "@/components/FinancialReports";
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [projectionDays, setProjectionDays] = useState<30 | 60 | 120>(30);
 
-  // Fetch real data from Supabase
-  const { stats, monthlyData, cashFlowProjection, daysUntilZero, transactions, loading: statsLoading } = useTransactionStats();
+  // Fetch real data from Supabase - NOW includes simulation support
+  const { stats, monthlyData, cashFlowProjection, daysUntilZero, transactions, loading: statsLoading, simulate, activeSimulation } = useTransactionStats();
   const { transactions: latestTransactions, isLoading: transactionsLoading, deleteTransaction: deleteTransactionHook } = useTransactions(user?.id);
   const { goals, refreshGoals } = useSmartGoals();
 
@@ -113,7 +114,7 @@ const Dashboard = () => {
         if (!data) {
           const { error: insertError } = await supabase
             .from('profiles')
-            .insert([{ id: user.id, email: user.email }]);
+            .insert([{ id: user.id, email: user.email }] as any);
 
           if (insertError) {
             console.error('Error creating profile:', insertError);
@@ -121,8 +122,8 @@ const Dashboard = () => {
           return;
         }
 
-        if (data?.avatar_url) {
-          setUserAvatar(data.avatar_url);
+        if ((data as any)?.avatar_url) {
+          setUserAvatar((data as any).avatar_url);
         }
       } catch (error) {
         console.error('Error:', error);
@@ -191,14 +192,14 @@ const Dashboard = () => {
     const amount = parseFloat(expenseAmount);
 
     try {
-      await addTransaction({
+      await transactionsService.createTransaction({
+        user_id: user.id,
         type: 'expense',
         description: expenseDescription,
         amount: amount,
-        category: 'outros',
-        payment_method: 'money',
+        category: 'Outros', // Capitalized to match valid categories
         date: new Date().toISOString(),
-        is_recurring: false,
+        status: 'completed'
       });
 
       setExpenseAmount("");
@@ -232,14 +233,14 @@ const Dashboard = () => {
     const amount = parseFloat(incomeAmount);
 
     try {
-      await addTransaction({
+      await transactionsService.createTransaction({
+        user_id: user.id,
         type: 'income',
         description: incomeDescription,
         amount: amount,
-        category: 'receita',
-        payment_method: 'money',
+        category: 'Receita', // Capitalized
         date: new Date().toISOString(),
-        is_recurring: false,
+        status: 'completed'
       });
 
       setIncomeAmount("");
@@ -414,7 +415,7 @@ const Dashboard = () => {
 
     // Formatar insights de IA
     const formattedInsights = insights.length > 0 ? {
-      summary: insights[0]?.summary || insights[0]?.description || 'Análise financeira realizada com sucesso.',
+      summary: (insights[0] as any)?.summary || insights[0]?.description || 'Análise financeira realizada com sucesso.',
       warnings: insights
         .filter(i => i.severity === 'high' || i.severity === 'medium')
         .map(i => `${i.title}: ${i.description}`),

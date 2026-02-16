@@ -12,7 +12,7 @@ const corsHeaders = {
 
 // OpenAI API configuration
 const OPENAI_API_BASE = 'https://api.openai.com/v1'
-const OPENAI_MODEL = 'gpt-4o'
+const OPENAI_MODEL = 'gpt-4o-mini' // Optimized for speed/latency
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -136,12 +136,14 @@ async function getUserFinancialData(supabase: any, userId: string) {
   const now = new Date()
   const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
 
+  // Optimize: Limit to 500 most recent transactions to prevent timeouts
   const { data: transactions, error: txError } = await supabase
     .from('transactions')
     .select('*')
     .eq('user_id', userId)
     .gte('date', threeMonthsAgo.toISOString())
     .order('date', { ascending: false })
+    .limit(500)
 
   if (txError) throw txError
 
@@ -461,6 +463,43 @@ DIRETRIZES:
 - Se perguntar "onde posso economizar?", olhe as categorias mais altas.
 - Seja conciso (max 3 parágrafos). Use markdown para listas ou negrito.
 - Nunca invente dados. Se não souber, diga que não tem essa informação nos últimos 90 dias.
+
+FORMATO DE RESPOSTA (IMPORTANTE):
+Você pode responder com texto normal, mas SE o usuário pedir uma simulação ou quiser adicionar uma transação, você DEVE incluir um bloco JSON no final da sua resposta (use markdown \\\`\\\`\\\`json ... \\\`\\\`\\\`).
+
+1. INTENÇÃO: SIMULAÇÃO
+Gatilhos: "E se a receita cair 20%?", "Simule aumento de gastos", "Qual impacto de perder 5k?"
+JSON Schema:
+\\\`\\\`\\\`json
+{
+  "type": "SIMULATION",
+  "data": {
+    "revenueChange": 0, // % (ex: -20 para queda de 20%)
+    "expenseChange": 0, // % (ex: 10 para aumento de 10%)
+    "oneTimeExpense": 0, // Valor absoluto (ex: 5000)
+    "oneTimeRevenue": 0, // Valor absoluto
+    "description": "Cenário de Queda de 20% na Receita"
+  }
+}
+\`\`\`
+
+2. INTENÇÃO: ADICIONAR TRANSAÇÃO (Zero Data Entry)
+Gatilhos: "Gastei 50 no Uber", "Recebi 5000 do cliente X", "Paguei 100 de internet"
+JSON Schema:
+\`\`\`json
+{
+  "type": "ADD_TRANSACTION",
+  "data": {
+    "amount": 0, // Valor positivo
+    "type": "expense", // ou "income"
+    "category": "Outros", // IMPORTANTE: Use APENAS uma destas: 'Vendas', 'Fornecedores', 'Fixo', 'Variável', 'Receita', 'Salários', 'Aluguel', 'Serviços', 'Marketing', 'Impostos', 'Outros'. Para comida/transporte use 'Variável'.
+    "description": "Descrição curta e clara",
+    "date": "YYYY-MM-DD" // Data de hoje se não especificado
+  }
+}
+\`\`\`
+
+Se não for nenhum desses casos, responda apenas com texto.
 `
 
   // 2. Prepare messages for OpenAI
@@ -484,7 +523,7 @@ DIRETRIZES:
       model: OPENAI_MODEL,
       messages: apiMessages,
       temperature: 0.7,
-      max_tokens: 500, // Shorter responses for chat
+      max_tokens: 350, // Shorter responses for faster chat
     }),
   })
 

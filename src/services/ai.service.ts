@@ -635,26 +635,58 @@ Ações HOJE, números reais, baseado em dados.`
   },
 
   /**
-   * Chat with Finora AI
+   * Chat with AI using financial context
    */
-  async chat(userId: string, messages: any[]): Promise<{ role: string, content: string }> {
+  async chat(userId: string, messages: any[]): Promise<{ content: string; command?: any }> {
     try {
-      const { data, error } = await supabase.functions.invoke('ai-insights', {
+      // Create AbortController for timeout (60 seconds)
+      // const controller = new AbortController()
+      // const timeoutId = setTimeout(() => controller.abort(), 60000)
+
+      // Force timeout after 45 seconds using Promise.race
+      const invokeOperation = supabase.functions.invoke('ai-insights', {
         body: {
           action: 'chat',
           userId,
-          messages
+          messages,
         },
-      })
+      });
 
-      if (error) {
-        throw new Error(error.message || 'Edge Function error')
+      const timeoutOperation = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Tempo limite excedido (45s)')), 45000);
+      });
+
+      console.log('[AI Debug] Sending chat request...');
+      // @ts-ignore
+      const { data, error } = await Promise.race([invokeOperation, timeoutOperation]);
+
+      if (error) throw new Error(error.message)
+
+      const content = data.content
+      console.log('[AI Debug] Raw content:', content); // Debug log
+      let command = null
+
+      // extract JSON block if exists (more robust regex)
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+      if (jsonMatch && jsonMatch[1]) {
+        try {
+          command = JSON.parse(jsonMatch[1])
+        } catch (e) {
+          console.error('Failed to parse AI command JSON', e)
+        }
       }
 
-      return data
+      // Remove JSON block from content to show only text to user
+      const cleanContent = content.replace(/```(?:json)?\s*[\s\S]*?\s*```/, '').trim()
+
+      return {
+        content: cleanContent,
+        command
+      }
+
     } catch (error: any) {
-      console.error('[AI] Error in chat:', error)
-      throw new Error(`Failed to chat: ${error.message}`)
+      console.error('[AI] Chat error:', error)
+      throw error
     }
   }
 }

@@ -50,7 +50,7 @@ VitePWA({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
       },
       devOptions: {
-        enabled: true,
+        enabled: false,
         type: 'module'
       }
     })

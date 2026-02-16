@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './useAuth'
 import type { Transaction } from '@/types'
@@ -404,8 +405,62 @@ export function useTransactionStats() {
     return daysUntilZero
   }
 
+  // Simulation State
+  const [simulation, setSimulation] = useState<{
+    revenueChange: number;
+    expenseChange: number;
+    oneTimeExpense: number;
+    oneTimeRevenue: number;
+  } | null>(null);
+
+  // Apply simulation to stats
+  const simulatedStats = useMemo(() => {
+    if (!data?.stats || !simulation) return data?.stats;
+
+    const { revenueChange, expenseChange, oneTimeExpense, oneTimeRevenue } = simulation;
+
+    // Apply percentage changes
+    const newRevenue = data.stats.totalRevenue * (1 + revenueChange / 100) + oneTimeRevenue;
+    const newExpenses = data.stats.totalExpenses * (1 + expenseChange / 100) + oneTimeExpense;
+    const newBalance = data.stats.currentBalance + (newRevenue - data.stats.totalRevenue) - (newExpenses - data.stats.totalExpenses);
+
+    return {
+      ...data.stats,
+      currentBalance: newBalance,
+      totalRevenue: newRevenue,
+      totalExpenses: newExpenses,
+      monthlySavings: newRevenue - newExpenses,
+    };
+  }, [data?.stats, simulation]);
+
+  // Apply simulation to projection
+  const simulatedProjection = useMemo(() => {
+    if (!data?.cashFlowProjection || !simulation) return data?.cashFlowProjection;
+
+    // Simple adjustment for visualization: shift the entire curve based on balance change
+    // and slope based on monthly savings change
+    const balanceDiff = (simulatedStats?.currentBalance || 0) - (data.stats.currentBalance || 0);
+    const savingsDiff = (simulatedStats?.monthlySavings || 0) - (data.stats.monthlySavings || 0);
+    const dailySavingsDiff = savingsDiff / 30;
+
+    return data.cashFlowProjection.map(day => ({
+      day: day.day,
+      balance: day.balance + balanceDiff + (dailySavingsDiff * day.day)
+    }));
+  }, [data?.cashFlowProjection, simulatedStats, simulation]);
+
+  // Recalculate days until zero with simulated values
+  const simulatedDaysUntilZero = useMemo(() => {
+    if (!simulatedStats) return 0;
+    if (simulatedStats.currentBalance <= 0) return 0;
+    if (simulatedStats.monthlySavings >= 0) return 999;
+
+    const dailyBurn = Math.abs(simulatedStats.monthlySavings) / 30;
+    return Math.floor(simulatedStats.currentBalance / dailyBurn);
+  }, [simulatedStats]);
+
   return {
-    stats: data?.stats || {
+    stats: simulatedStats || {
       currentBalance: 0,
       totalRevenue: 0,
       totalExpenses: 0,
@@ -413,10 +468,13 @@ export function useTransactionStats() {
       monthlyGrowth: 0,
     },
     monthlyData: data?.monthlyData || [],
-    cashFlowProjection: data?.cashFlowProjection || [],
-    daysUntilZero: data?.daysUntilZero || 0,
+    cashFlowProjection: simulatedProjection || [],
+    daysUntilZero: simulation ? simulatedDaysUntilZero : (data?.daysUntilZero || 0),
     transactions: data?.transactions || [],
     loading: isLoading,
     error: error ? (error as Error).message : null,
+    simulate: setSimulation, // Expose simulation setter
+    activeSimulation: simulation // Expose current simulation state
   }
 }
+
