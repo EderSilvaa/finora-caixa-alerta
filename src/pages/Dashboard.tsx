@@ -200,18 +200,23 @@ const Dashboard = () => {
       return;
     }
 
-    createTransaction({
-      type: 'expense',
-      description: expenseDescription,
-      amount,
-      category: expenseCategory,
-      date: new Date().toISOString(),
-    });
-
-    setExpenseAmount("");
-    setExpenseDescription("");
-    setExpenseCategory("Outros");
-    setShowExpenseModal(false);
+    createTransaction(
+      {
+        type: 'expense',
+        description: expenseDescription,
+        amount,
+        category: expenseCategory,
+        date: new Date().toISOString(),
+      },
+      {
+        onSuccess: () => {
+          setExpenseAmount("");
+          setExpenseDescription("");
+          setExpenseCategory("Outros");
+          setShowExpenseModal(false);
+        },
+      }
+    );
   };
 
   // Função para registrar receita
@@ -235,18 +240,23 @@ const Dashboard = () => {
       return;
     }
 
-    createTransaction({
-      type: 'income',
-      description: incomeDescription,
-      amount,
-      category: incomeCategory,
-      date: new Date().toISOString(),
-    });
-
-    setIncomeAmount("");
-    setIncomeDescription("");
-    setIncomeCategory("Receita");
-    setShowIncomeModal(false);
+    createTransaction(
+      {
+        type: 'income',
+        description: incomeDescription,
+        amount,
+        category: incomeCategory,
+        date: new Date().toISOString(),
+      },
+      {
+        onSuccess: () => {
+          setIncomeAmount("");
+          setIncomeDescription("");
+          setIncomeCategory("Receita");
+          setShowIncomeModal(false);
+        },
+      }
+    );
   };
 
   // Função para abrir modal de análise (sem rodar nova análise)
